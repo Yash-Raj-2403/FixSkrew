@@ -145,7 +145,7 @@ export function useCase() {
   }, []);
 
   const send = useCallback(
-    async (message: string, language: string) => {
+    async (message: string, language: string, general = false) => {
       const id = await ensure();
       chatAbort.current?.abort();
       const ctrl = new AbortController();
@@ -158,13 +158,14 @@ export function useCase() {
         {
           onSources: (sources, vehicleMatch) => setTurn((t) => t && { ...t, sources, vehicleMatch }),
           onDelta: (text) => setTurn((t) => t && { ...t, reply: t.reply + text }),
-          onDone: ({ user, assistant }) => {
-            setData((c) => c && { ...c, messages: [...c.messages, user, assistant] });
+          onDone: ({ user, assistant, replaced }) => {
+            setData((c) => c && { ...c, messages: [...(replaced ? c.messages.slice(0, -2) : c.messages), user, assistant] });
             setTurn(null);
           },
           onError: (message) => setTurn((t) => t && { ...t, error: message }),
         },
         ctrl.signal,
+        general,
       );
     },
     [ensure],
@@ -183,6 +184,15 @@ export function useCase() {
     } catch (err) {
       setReportState({ kind: "error", message: err instanceof Error ? err.message : "The report could not be generated." });
     }
+  }, []);
+
+  const clearChat = useCallback(async () => {
+    if (!idRef.current) return;
+    chatAbort.current?.abort();
+    setTurn(null);
+    setData(await api.clearMessages(idRef.current));
+    setReport(null);
+    setReportState({ kind: "idle" });
   }, []);
 
   const newCase = useCallback(() => {
@@ -207,6 +217,7 @@ export function useCase() {
     turn,
     report,
     reportState,
+    ensureCase: ensure,
     saveVehicle,
     upload,
     dismissUpload,
@@ -214,6 +225,7 @@ export function useCase() {
     send,
     dismissTurn,
     generateReport,
+    clearChat,
     newCase,
   };
 }

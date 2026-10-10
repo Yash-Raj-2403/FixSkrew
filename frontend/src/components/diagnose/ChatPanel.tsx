@@ -35,7 +35,7 @@ function SourcesList({ sources, anchorPrefix }: { sources: Source[]; anchorPrefi
   );
 }
 
-function Bubble({ m, index }: { m: Pick<ChatMessage, "role" | "content" | "sources">; index: number | string }) {
+function Bubble({ m, index, onGeneral }: { m: Pick<ChatMessage, "role" | "content" | "sources" | "mode">; index: number | string; onGeneral?: () => void }) {
   const prefix = `msg${index}`;
   if (m.role === "user")
     return (
@@ -55,6 +55,12 @@ function Bubble({ m, index }: { m: Pick<ChatMessage, "role" | "content" | "sourc
       <div className="min-w-0 flex-1 text-[14px] leading-relaxed text-fog-300">
         <RichText text={m.content} sources={m.sources} anchorPrefix={prefix} />
         <SourcesList sources={m.sources ?? []} anchorPrefix={prefix} />
+        {m.mode === "no_sources" && onGeneral && (
+          <button type="button" onClick={onGeneral} className="mt-3 rounded-full border border-volt-400/50 px-4 py-1.5 text-xs text-fog-100 transition-colors hover:bg-volt-400/10">
+            Give a general answer (no citations)
+          </button>
+        )}
+        {m.mode === "general" && <p className="mt-2 text-[11px] text-amber-hv">Uncited: general knowledge, not from your sources.</p>}
       </div>
     </div>
   );
@@ -157,7 +163,16 @@ export function ChatPanel({
         )}
 
         {messages.map((m, i) => (
-          <Bubble key={m.id} m={m} index={i} />
+          <Bubble
+            key={m.id}
+            m={m}
+            index={i}
+            onGeneral={
+              i === messages.length - 1 && !busy && messages[i - 1]?.role === "user"
+                ? () => void state.send(messages[i - 1].content, language, true)
+                : undefined
+            }
+          />
         ))}
 
         {turn && (

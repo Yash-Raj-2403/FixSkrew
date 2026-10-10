@@ -11,7 +11,8 @@ import { CaseReportRequest, ChatRequest, DiagnoseRequest, VehicleSchema } from "
 import { diagnose } from "./diagnose.js";
 import { sourcesForComponent } from "./retrieval.js";
 import { ANY_VEHICLE, isComponentId } from "./catalog.js";
-import { LlmError, LlmUnavailableError } from "./llm.js";
+import { batteryFromCase } from "./battery.js";
+import { analyseVisual, LlmError, LlmUnavailableError } from "./llm.js";
 import { UnsupportedFileError } from "./documents.js";
 import {
   addDocument,
@@ -19,6 +20,7 @@ import {
   CaseInputError,
   CaseNotFoundError,
   chat,
+  clearMessages,
   createCase,
   deleteCase,
   LIMITS,
@@ -199,7 +201,38 @@ app.post("/api/cases/:id/chat", async (req, res, next) => {
   const parsed = ChatRequest.safeParse(req.body);
   if (!parsed.success) return void validationError(res, parsed.error.issues);
   try {
-    await chat(req.params.id, parsed.data.message, parsed.data.language, res);
+    await chat(req.params.id, parsed.data.message, parsed.data.language, res, parsed.data.general);
+  } catch (err) {
+    next(err);
+  }
+});
+
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const imageUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 1 } });
+
+app.delete("/api/cases/:id/messages", async (req, res, next) => {
+  try {
+    res.json(publicCase(await clearMessages(String(req.params.id))));
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post("/api/cases/:id/visual", imageUpload.single("image"), async (req, res, next) => {
+  try {
+    const c = await loadCase(String(req.params.id));
+    const f = req.file;
+    if (!f) throw new CaseInputError("Choose an image or a video frame.");
+    if (!IMAGE_TYPES.has(f.mimetype)) throw new CaseInputError("Use a JPEG, PNG or WebP image.");
+    res.json(await analyseVisual({ image: { mimeType: f.mimetype, data: f.buffer }, caseDoc: c, language: String(req.body?.language ?? "auto") }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get("/api/cases/:id/battery", async (req, res, next) => {
+  try {
+    res.json(batteryFromCase(await loadCase(String(req.params.id))));
   } catch (err) {
     next(err);
   }

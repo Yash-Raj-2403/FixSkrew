@@ -24,7 +24,7 @@ export const anthropicProvider: LlmProvider = {
   name: "anthropic",
   model: (tier) => (tier === "fast" ? config.llm.fastModel : config.llm.model),
 
-  async structured({ system, user, schema, effort, tier }) {
+  async structured({ system, user, schema, effort, tier, images }) {
     try {
       const response = await getClient().beta.messages.parse({
         model: this.model(tier),
@@ -34,7 +34,20 @@ export const anthropicProvider: LlmProvider = {
         thinking: { type: "adaptive" },
         output_config: { effort, format: betaZodOutputFormat(schema) },
         system,
-        messages: [{ role: "user", content: user }],
+        messages: [
+          {
+            role: "user",
+            content: images?.length
+              ? [
+                  ...images.map((i) => ({
+                    type: "image" as const,
+                    source: { type: "base64" as const, media_type: i.mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp", data: i.data.toString("base64") },
+                  })),
+                  { type: "text" as const, text: user },
+                ]
+              : user,
+          },
+        ],
       });
       if (response.stop_reason === "refusal") throw new LlmError("The language model declined this request.");
       if (response.stop_reason === "max_tokens") throw new LlmError("The output was cut off before completion.");

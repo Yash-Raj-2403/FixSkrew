@@ -137,6 +137,8 @@ export interface CaseMessage {
   role: "user" | "assistant";
   content: string;
   sources?: SourceRef[];
+  /** no_sources: nothing matched, no model call made. general: uncited answer the user asked for. */
+  mode?: "no_sources" | "general";
   createdAt: Date;
 }
 

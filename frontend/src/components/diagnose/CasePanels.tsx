@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useRef, useState, type DragEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { COMPONENT_BY_ID } from "../../data/components";
-import type { CaseDocument, Vehicle } from "../../lib/api";
+import type { CaseDocument } from "../../lib/api";
 import type { CaseState, PendingUpload } from "../../lib/useCase";
 import { showComponentInfo } from "../../lib/router";
 
-const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/;
 export const ACCEPT = [".pdf", ".docx", ".md", ".txt", ".log", ".csv", ".json", ".jsonl"];
 const MAX_BYTES = 25 * 1024 * 1024;
 
@@ -13,126 +12,6 @@ function formatBytes(n: number) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
-}
-
-/* --------------------------------- vehicle --------------------------------- */
-
-interface VehicleForm {
-  make: string;
-  model: string;
-  year: string;
-  trim: string;
-  batteryVariant: string;
-  odometerKm: string;
-  vin: string;
-}
-
-const toForm = (v: Vehicle = {}): VehicleForm => ({
-  make: v.make ?? "",
-  model: v.model ?? "",
-  year: v.year ? String(v.year) : "",
-  trim: v.trim ?? "",
-  batteryVariant: v.batteryVariant ?? "",
-  odometerKm: v.odometerKm != null ? String(v.odometerKm) : "",
-  vin: v.vin ?? "",
-});
-
-export function VehicleCard({ state, suggestions }: { state: CaseState; suggestions: { make?: string; model?: string }[] }) {
-  const saved = state.data?.vehicle;
-  const [form, setForm] = useState<VehicleForm>(() => toForm(saved));
-  const [errors, setErrors] = useState<Partial<Record<keyof VehicleForm, string>>>({});
-  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [message, setMessage] = useState("");
-
-  // Sync when a case loads or is replaced.
-  const caseId = state.data?.id;
-  useEffect(() => setForm(toForm(state.data?.vehicle)), [caseId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const dirty = JSON.stringify(form) !== JSON.stringify(toForm(saved));
-  const set = (k: keyof VehicleForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((f) => ({ ...f, [k]: e.target.value }));
-    setStatus("idle");
-  };
-
-  const makes = [...new Set(suggestions.map((s) => s.make).filter(Boolean) as string[])];
-  const models = [
-    ...new Set(
-      suggestions
-        .filter((s) => !form.make.trim() || s.make?.toLowerCase() === form.make.trim().toLowerCase())
-        .map((s) => s.model)
-        .filter(Boolean) as string[],
-    ),
-  ];
-
-  const save = async () => {
-    const e: typeof errors = {};
-    if (form.year && (!/^\d{4}$/.test(form.year) || +form.year < 1990 || +form.year > new Date().getFullYear() + 2))
-      e.year = "Four-digit model year.";
-    if (form.vin && !VIN_RE.test(form.vin.trim().toUpperCase())) e.vin = "17 characters, no I, O or Q.";
-    if (form.odometerKm && !(Number(form.odometerKm) >= 0)) e.odometerKm = "Kilometres.";
-    setErrors(e);
-    if (Object.keys(e).length) return;
-    const v: Vehicle = {
-      ...(form.make.trim() && { make: form.make.trim() }),
-      ...(form.model.trim() && { model: form.model.trim() }),
-      ...(form.year && { year: Number(form.year) }),
-      ...(form.trim.trim() && { trim: form.trim.trim() }),
-      ...(form.batteryVariant.trim() && { batteryVariant: form.batteryVariant.trim() }),
-      ...(form.odometerKm && { odometerKm: Number(form.odometerKm) }),
-      ...(form.vin.trim() && { vin: form.vin.trim().toUpperCase() }),
-    };
-    setStatus("saving");
-    try {
-      await state.saveVehicle(v);
-      setStatus("saved");
-    } catch (err) {
-      setStatus("error");
-      setMessage(err instanceof Error ? err.message : "Could not save.");
-    }
-  };
-
-  const field = (k: keyof VehicleForm, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
-    <label className="block min-w-0">
-      <span className="mb-1 block text-[11px] text-fog-400">{label}</span>
-      <input className="field py-2!" value={form[k]} onChange={set(k)} aria-invalid={errors[k] ? true : undefined} {...props} />
-      {errors[k] && <span className="mt-1 block text-[11px] text-red-300">{errors[k]}</span>}
-    </label>
-  );
-
-  return (
-    <section className="glass rounded-2xl p-5" aria-labelledby="vehicle-heading">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 id="vehicle-heading" className="eyebrow text-[10px]!">
-          Vehicle
-        </h2>
-        <span className="text-[11px] text-fog-500">Any make or model</span>
-      </div>
-      <div className="grid grid-cols-2 gap-2.5">
-        {field("make", "Make", { list: "kb-makes", placeholder: "e.g. Tesla, Kia, BYD", autoComplete: "off" })}
-        {field("model", "Model", { list: "kb-models", placeholder: "e.g. Model 3, EV6", autoComplete: "off" })}
-        {field("year", "Model year", { inputMode: "numeric", placeholder: "e.g. 2022" })}
-        {field("trim", "Trim / drive", { placeholder: "e.g. AWD" })}
-        {field("batteryVariant", "Battery variant", { placeholder: "From the pack label" })}
-        {field("odometerKm", "Odometer (km)", { inputMode: "numeric" })}
-        <div className="col-span-2">{field("vin", "VIN (optional)", { maxLength: 17, className: "field py-2! font-mono uppercase" })}</div>
-      </div>
-      <datalist id="kb-makes">{makes.map((m) => <option key={m} value={m} />)}</datalist>
-      <datalist id="kb-models">{models.map((m) => <option key={m} value={m} />)}</datalist>
-      <div className="mt-3.5 flex items-center justify-between gap-3">
-        <p className="text-[11px] leading-snug text-fog-500">
-          {status === "saved" ? "Saved. Searches now favour documents for this vehicle." : status === "error" ? message : "Narrows the search to matching and general documents."}
-        </p>
-        <button
-          type="button"
-          onClick={save}
-          disabled={!dirty || status === "saving"}
-          className="shrink-0 rounded-full border border-volt-400/50 px-4 py-1.5 text-xs text-fog-100 transition-colors enabled:hover:bg-volt-400/10 disabled:border-white/10 disabled:text-fog-500"
-        >
-          {status === "saving" ? "Saving…" : "Save vehicle"}
-        </button>
-      </div>
-    </section>
-  );
 }
 
 /* -------------------------------- documents -------------------------------- */

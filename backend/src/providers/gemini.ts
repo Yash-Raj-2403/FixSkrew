@@ -49,12 +49,17 @@ export const geminiProvider: LlmProvider = {
   name: "gemini",
   model: (tier) => (tier === "fast" ? config.llm.fastModel : config.llm.model),
 
-  async structured({ system, user, schema, tier }) {
+  async structured({ system, user, schema, tier, images }) {
     try {
       const r = await withRetry(() =>
         getClient().models.generateContent({
           model: this.model(tier),
-          contents: [{ role: "user", parts: [{ text: user }] }],
+          contents: [
+            {
+              role: "user",
+              parts: [...(images ?? []).map((i) => ({ inlineData: { mimeType: i.mimeType, data: i.data.toString("base64") } })), { text: user }],
+            },
+          ],
           config: {
             systemInstruction: system,
             responseMimeType: "application/json",

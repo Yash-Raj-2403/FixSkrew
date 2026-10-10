@@ -1,3 +1,264 @@
 {
-  "documents": []
+  "documents": [
+    {
+      "file": "tesla-model-3/01-hv-battery-service-manual.md",
+      "title": "SYNTHETIC TEST: Model 3 HV Battery Service Manual",
+      "docType": "service_manual",
+      "publisher": "Synthetic test data (not Tesla)",
+      "language": "en",
+      "vehicle": {
+        "make": "Tesla",
+        "model": "Model 3",
+        "years": [
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
+      },
+      "components": [
+        "battery-pack",
+        "battery-modules",
+        "bms",
+        "cooling-plate",
+        "hv-junction-box",
+        "hv-harness",
+        "charging-port"
+      ],
+      "componentRules": [
+        {
+          "pattern": "cooling plate|coolant|pump|thermal|heater",
+          "components": [
+            "cooling-plate"
+          ]
+        },
+        {
+          "pattern": "BMS|battery management",
+          "components": [
+            "bms"
+          ]
+        },
+        {
+          "pattern": "junction box|contactor|pre-charge",
+          "components": [
+            "hv-junction-box"
+          ]
+        },
+        {
+          "pattern": "harness|interlock|HVIL",
+          "components": [
+            "hv-harness"
+          ]
+        },
+        {
+          "pattern": "charge port|charging inlet",
+          "components": [
+            "charging-port"
+          ]
+        },
+        {
+          "pattern": "module|cell|spread",
+          "components": [
+            "battery-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tesla-model-3/02-recall-and-service-bulletins.md",
+      "title": "SYNTHETIC TEST: Model 3 Recall Notices and Service Bulletins",
+      "docType": "recall_notice",
+      "publisher": "Synthetic test data (not Tesla)",
+      "language": "en",
+      "vehicle": {
+        "make": "Tesla",
+        "model": "Model 3",
+        "years": [
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
+      },
+      "components": [
+        "battery-pack",
+        "battery-modules",
+        "bms",
+        "cooling-plate",
+        "hv-junction-box",
+        "hv-harness",
+        "charging-port"
+      ],
+      "componentRules": [
+        {
+          "pattern": "cooling plate|coolant|pump|thermal|heater",
+          "components": [
+            "cooling-plate"
+          ]
+        },
+        {
+          "pattern": "BMS|battery management",
+          "components": [
+            "bms"
+          ]
+        },
+        {
+          "pattern": "junction box|contactor|pre-charge",
+          "components": [
+            "hv-junction-box"
+          ]
+        },
+        {
+          "pattern": "harness|interlock|HVIL",
+          "components": [
+            "hv-harness"
+          ]
+        },
+        {
+          "pattern": "charge port|charging inlet",
+          "components": [
+            "charging-port"
+          ]
+        },
+        {
+          "pattern": "module|cell|spread",
+          "components": [
+            "battery-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tesla-model-3/03-diagnostic-logs.md",
+      "title": "SYNTHETIC TEST: Model 3 Diagnostic Logs",
+      "docType": "diagnostic_log",
+      "publisher": "Synthetic test data (not Tesla)",
+      "language": "en",
+      "vehicle": {
+        "make": "Tesla",
+        "model": "Model 3",
+        "years": [
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
+      },
+      "components": [
+        "battery-pack",
+        "battery-modules",
+        "bms",
+        "cooling-plate",
+        "hv-junction-box",
+        "hv-harness",
+        "charging-port"
+      ],
+      "componentRules": [
+        {
+          "pattern": "cooling plate|coolant|pump|thermal|heater",
+          "components": [
+            "cooling-plate"
+          ]
+        },
+        {
+          "pattern": "BMS|battery management",
+          "components": [
+            "bms"
+          ]
+        },
+        {
+          "pattern": "junction box|contactor|pre-charge",
+          "components": [
+            "hv-junction-box"
+          ]
+        },
+        {
+          "pattern": "harness|interlock|HVIL",
+          "components": [
+            "hv-harness"
+          ]
+        },
+        {
+          "pattern": "charge port|charging inlet",
+          "components": [
+            "charging-port"
+          ]
+        },
+        {
+          "pattern": "module|cell|spread",
+          "components": [
+            "battery-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tesla-model-3/04-repair-histories.md",
+      "title": "SYNTHETIC TEST: Model 3 Repair Histories",
+      "docType": "repair_history",
+      "publisher": "Synthetic test data (not Tesla)",
+      "language": "en",
+      "vehicle": {
+        "make": "Tesla",
+        "model": "Model 3",
+        "years": [
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
+      },
+      "components": [
+        "battery-pack",
+        "battery-modules",
+        "bms",
+        "cooling-plate",
+        "hv-junction-box",
+        "hv-harness",
+        "charging-port"
+      ],
+      "componentRules": [
+        {
+          "pattern": "cooling plate|coolant|pump|thermal|heater",
+          "components": [
+            "cooling-plate"
+          ]
+        },
+        {
+          "pattern": "BMS|battery management",
+          "components": [
+            "bms"
+          ]
+        },
+        {
+          "pattern": "junction box|contactor|pre-charge",
+          "components": [
+            "hv-junction-box"
+          ]
+        },
+        {
+          "pattern": "harness|interlock|HVIL",
+          "components": [
+            "hv-harness"
+          ]
+        },
+        {
+          "pattern": "charge port|charging inlet",
+          "components": [
+            "charging-port"
+          ]
+        },
+        {
+          "pattern": "module|cell|spread",
+          "components": [
+            "battery-modules"
+          ]
+        }
+      ]
+    }
+  ]
 }

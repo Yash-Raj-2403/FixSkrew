@@ -35,6 +35,13 @@ export function publicCase(c: CaseDoc) {
   return { id: _id, ...rest, hasReport: Boolean(lastReport) };
 }
 
+/** Remove the conversation (and the report built from it); uploaded documents stay. */
+export async function clearMessages(id: string): Promise<CaseDoc> {
+  await loadCase(id);
+  await (await getCases()).updateOne({ _id: id }, { $set: { messages: [], updatedAt: new Date() }, $unset: { lastReport: "" } });
+  return loadCase(id);
+}
+
 export async function createCase(vehicle: CaseVehicle = {}): Promise<CaseDoc> {
   const now = new Date();
   // A random v4 UUID is the only credential for a case; there are no user accounts.
@@ -187,7 +194,11 @@ function sseWrite(res: Response, event: string, data: unknown) {
 }
 
 /** Answer a chat message over Server-Sent Events: `sources`, `delta`*, then `done` or `error`. */
-export async function chat(id: string, message: string, language: string, res: Response) {
+const NO_SOURCES_TEXT =
+  "I couldn't find anything about this in your documents or the knowledge base, so I can't answer it with sources. I can give a general answer from general engineering knowledge instead. It won't be cited, so treat it as unverified.";
+const GENERAL_PREFIX = "General answer, not from your documents or the knowledge base (unverified):\n\n";
+
+export async function chat(id: string, message: string, language: string, res: Response, general = false) {
   const c = await loadCase(id);
   const text = message.trim();
   if (!text) throw new CaseInputError("Write a message first.");
@@ -212,16 +223,40 @@ export async function chat(id: string, message: string, language: string, res: R
     const sources: SourceRef[] = evidence.map(toSource);
     sseWrite(res, "sources", { sources, vehicleMatch });
 
+    // Nothing to cite: say so instead of answering from the model's memory. The user can ask
+    // for a general answer, which is labelled as uncited.
+    const useGeneral = evidence.length === 0 && general;
+    if (evidence.length === 0 && !general) {
+      const userMsg: CaseMessage = { id: randomUUID(), role: "user", content: text, createdAt: new Date() };
+      const assistantMsg: CaseMessage = { id: randomUUID(), role: "assistant", content: NO_SOURCES_TEXT, mode: "no_sources", createdAt: new Date() };
+      sseWrite(res, "delta", { text: NO_SOURCES_TEXT });
+      await (await getCases()).updateOne({ _id: id }, { $push: { messages: { $each: [userMsg, assistantMsg] } }, $set: { updatedAt: new Date() } });
+      sseWrite(res, "done", { user: userMsg, assistant: assistantMsg });
+      return;
+    }
+    if (useGeneral) sseWrite(res, "delta", { text: GENERAL_PREFIX });
+
     const history = c.messages.slice(-LIMITS.historyTurns * 2).map((m) => ({ role: m.role, content: rewriteCitations(m) }));
-    const reply = await streamChatReply({
+    const rawReply = await streamChatReply({
       history,
       caseDoc: c,
       message: text,
       evidence,
       match: vehicleMatch,
       language,
+      general: useGeneral,
       onText: (delta) => !aborted && sseWrite(res, "delta", { text: delta }),
     });
+
+    // Citations must point at excerpts that were retrieved. Strip any that do not, and say so
+    // when a sourced answer ends up with no valid citation at all.
+    const valid = new Set(evidence.map((e) => e.id));
+    let reply = useGeneral ? GENERAL_PREFIX + rawReply : rawReply.replace(/\s?\[(S\d+)\]/g, (m, sid) => (valid.has(sid) ? m : ""));
+    if (!useGeneral && ![...reply.matchAll(/\[(S\d+)\]/g)].length) {
+      const note = "\n\nNote: this reply does not cite a source, so treat it as unverified.";
+      reply += note;
+      if (!aborted) sseWrite(res, "delta", { text: note });
+    }
 
     const cited = new Set([...reply.matchAll(/\[(S\d+)\]/g)].map((m) => m[1]));
     const now = new Date();
@@ -230,13 +265,21 @@ export async function chat(id: string, message: string, language: string, res: R
       id: randomUUID(),
       role: "assistant",
       content: reply,
+      ...(useGeneral && { mode: "general" as const }),
       // Keep cited sources first; drop uncited ones to keep the case document small.
       sources: sources.filter((s) => cited.has(s.id)),
       createdAt: new Date(),
     };
     // Store the pair only once the reply completed, so history always alternates.
-    await (await getCases()).updateOne({ _id: id }, { $push: { messages: { $each: [userMsg, assistantMsg] } }, $set: { updatedAt: new Date() } });
-    sseWrite(res, "done", { user: userMsg, assistant: assistantMsg });
+    // A general answer replaces the "no sources" exchange it follows instead of repeating the question.
+    const replaces = useGeneral && c.messages.at(-1)?.mode === "no_sources" && c.messages.at(-2)?.content === text;
+    await (await getCases()).updateOne(
+      { _id: id },
+      replaces
+        ? { $set: { messages: [...c.messages.slice(0, -2), userMsg, assistantMsg], updatedAt: new Date() } }
+        : { $push: { messages: { $each: [userMsg, assistantMsg] } }, $set: { updatedAt: new Date() } },
+    );
+    sseWrite(res, "done", { user: userMsg, assistant: assistantMsg, replaced: replaces });
   } catch (err) {
     console.error("[chat]", err);
     const message =

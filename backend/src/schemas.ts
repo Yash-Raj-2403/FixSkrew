@@ -50,6 +50,8 @@ export type DiagnoseRequest = z.infer<typeof DiagnoseRequest>;
 export const ChatRequest = z.object({
   message: z.string().trim().min(1, "Write a message first.").max(4000),
   language: z.string().trim().max(16).default("auto"),
+  /** Answer from general knowledge, uncited, after the user accepted that no source covers the question. */
+  general: z.boolean().default(false),
 });
 
 export const CaseReportRequest = z.object({ language: z.string().trim().max(16).default("auto") });

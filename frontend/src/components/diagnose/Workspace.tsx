@@ -6,25 +6,12 @@ import { setUi, useUi } from "../../lib/store";
 import { Report } from "../Report";
 import { EncryptedText } from "../ui/encrypted-text";
 import { SquigglyText } from "../ui/squiggly-text";
-import { DocumentsCard, VehicleCard } from "./CasePanels";
+import { DocumentsCard } from "./CasePanels";
+import { VehicleCard } from "./VehicleCard";
 import { ChatPanel } from "./ChatPanel";
-
-const LANGUAGES = [
-  { code: "auto", label: "Match my messages" },
-  { code: "en", label: "English" },
-  { code: "ko", label: "한국어" },
-  { code: "de", label: "Deutsch" },
-  { code: "fr", label: "Français" },
-  { code: "es", label: "Español" },
-  { code: "it", label: "Italiano" },
-  { code: "pt", label: "Português" },
-  { code: "nl", label: "Nederlands" },
-  { code: "pl", label: "Polski" },
-  { code: "tr", label: "Türkçe" },
-  { code: "hi", label: "हिन्दी" },
-  { code: "ja", label: "日本語" },
-  { code: "zh", label: "中文" },
-];
+import { BatteryMap } from "./BatteryMap";
+import { BatteryDashboard } from "../battery/BatteryDashboard";
+import { VisualLocator } from "./VisualLocator";
 
 function serviceLabel(s: string) {
   return s === "ready" ? "Ready" : s === "not_configured" ? "Not configured" : "Unreachable";
@@ -66,30 +53,44 @@ function ServiceStatus({ state, onRetry }: { state: HealthState; onRetry: () => 
   );
 }
 
-const STEPS = ["Fault input", "Evidence retrieval", "AI analysis", "Investigation report"];
+const STEPS = [
+  { title: "Fault input", hint: "Files & chat" },
+  { title: "Evidence retrieval", hint: "Searching sources" },
+  { title: "AI analysis", hint: "Reasoning" },
+  { title: "Investigation report", hint: "Verified findings" },
+];
 
 function Workflow({ state }: { state: CaseState }) {
   const hasInput = state.messages.length > 0 || (state.data?.documents.length ?? 0) > 0;
   const working = Boolean(state.turn && !state.turn.error) || state.reportState.kind === "running" || state.uploads.some((u) => u.stage !== "failed");
   const done = [hasInput, hasInput && state.messages.length > 0, state.messages.length > 0, Boolean(state.report)];
   return (
-    <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Investigation workflow">
+    <ol className="relative grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Investigation workflow">
+      <span className="pointer-events-none absolute top-[27px] right-[12.5%] left-[12.5%] hidden h-px bg-white/10 sm:block" />
       {STEPS.map((s, i) => {
         const running = working && (i === 1 || i === 2);
         return (
-          <li
-            key={s}
-            className={`relative overflow-hidden rounded-xl border px-3.5 py-3 transition-colors ${
-              done[i] ? "border-volt-400/40 bg-volt-400/[0.06]" : running ? "border-volt-400/30" : "border-white/[0.07]"
-            }`}
-          >
-            <span className="font-mono text-[10px] text-fog-500">0{i + 1}</span>
-            <p className={`mt-0.5 text-[13px] ${done[i] || running ? "text-fog-100" : "text-fog-400"}`}>{s}</p>
-            {running && (
-              <span className="absolute inset-x-0 bottom-0 h-px overflow-hidden">
-                <span className="block h-full w-1/3 animate-[loadbar_1.4s_ease-in-out_infinite] bg-volt-400" />
-              </span>
-            )}
+          <li key={s.title} className="relative flex flex-col items-center text-center">
+            <span
+              className={`relative z-10 grid size-14 place-items-center rounded-full border font-mono text-sm transition-all duration-500 ${
+                done[i]
+                  ? "border-volt-400 bg-volt-400/15 text-volt-300 shadow-[0_0_28px_-4px_rgba(63,216,242,0.55)]"
+                  : running
+                    ? "border-volt-400/60 bg-ink-900 text-volt-300"
+                    : "border-white/10 bg-ink-900 text-fog-500"
+              }`}
+            >
+              {running && <span className="absolute inset-0 animate-ping rounded-full border border-volt-400/50 motion-reduce:animate-none" />}
+              {done[i] && !running ? (
+                <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="m5 12 5 5L20 7" />
+                </svg>
+              ) : (
+                `0${i + 1}`
+              )}
+            </span>
+            <p className={`mt-2.5 text-[13px] ${done[i] || running ? "text-fog-100" : "text-fog-400"}`}>{s.title}</p>
+            <p className="text-[11px] text-fog-500">{running ? "Working…" : s.hint}</p>
           </li>
         );
       })}
@@ -165,12 +166,27 @@ function ReportTab({ state, language }: { state: CaseState; language: string }) 
 export function Workspace() {
   const { state: health, refresh } = useHealth();
   const c = useCase();
-  const [tab, setTab] = useState<"chat" | "report">("chat");
-  const [language, setLanguage] = useState("auto");
+  const [tab, setTab] = useState<"chat" | "visual" | "health" | "battery" | "report">("chat");
+  // The reply language follows the user's own messages.
+  const language = "auto";
   const agentFocus = useUi((s) => s.agentFocus);
   const ready = health.kind === "online" && health.health.ready;
   const canUpload = health.kind === "online" && health.health.services.database === "ready" && health.health.services.embeddings === "ready";
   const suggestions = health.kind === "online" ? (health.health.knowledgeBase.vehicles ?? []) : [];
+
+  // Parts the latest answer's evidence points at, plus module numbers named in the chat.
+  const lastAssistant = [...c.messages].reverse().find((m) => m.role === "assistant");
+  const lastUser = [...c.messages].reverse().find((m) => m.role === "user");
+  const mapSources = c.turn?.sources.length ? c.turn.sources : (lastAssistant?.sources?.length ? lastAssistant.sources : []);
+  const hits: Record<string, number> = {};
+  for (const s of mapSources) for (const id of s.components) hits[id] = (hits[id] ?? 0) + 1;
+  const modules = [
+    ...new Set(
+      [...`${c.turn?.user ?? lastUser?.content ?? ""} ${lastAssistant?.content ?? ""}`.matchAll(/(?:module|cell group)\s*#?(\d{1,2})/gi)]
+        .map((m) => +m[1])
+        .filter((n) => n >= 1 && n <= 12),
+    ),
+  ];
 
   // Jump to the report once it exists.
   useEffect(() => {
@@ -179,7 +195,16 @@ export function Workspace() {
 
   return (
     <section id="agent" className="relative min-h-[100svh] bg-ink-900 pt-32 pb-20 sm:pt-40 sm:pb-28">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(ellipse_at_50%_0%,rgba(63,216,242,0.08),transparent_65%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[560px] bg-[radial-gradient(ellipse_at_50%_0%,rgba(63,216,242,0.14),transparent_65%)]" />
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[560px] opacity-[0.35] [mask-image:linear-gradient(to_bottom,black,transparent)]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(63,216,242,0.09) 1px,transparent 1px),linear-gradient(90deg,rgba(63,216,242,0.09) 1px,transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+      <span className="pointer-events-none absolute inset-x-0 top-32 h-px animate-[scan_6s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-volt-400/60 to-transparent motion-reduce:hidden" />
       <div className="relative mx-auto max-w-[1440px] px-4 sm:px-8 lg:px-12">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
@@ -187,11 +212,12 @@ export function Workspace() {
               <EncryptedText text="Diagnosis workspace" revealDelayMs={50} />
             </p>
             <h1 className="text-3xl leading-tight font-semibold tracking-tight text-fog-100 sm:text-[2.75rem]">
-              Start an <SquigglyText className="cursor-default text-volt-400">investigation.</SquigglyText>
+              Drop the manual. <br className="hidden sm:block" />
+              We'll find the <SquigglyText className="cursor-default text-volt-400">fault.</SquigglyText>
             </h1>
             <p className="mt-4 text-[15px] leading-relaxed text-fog-300">
-              Add the documents you have, chat through the fault, then generate an investigation report. Every answer shows the
-              source it comes from.
+              Upload manuals, scan reports or logs. FixSkrew reads every file, identifies the vehicle for you to confirm, then
+              diagnoses with the source cited on every answer.
             </p>
           </div>
           <div id="service-status" className="glass rounded-xl px-4 py-3 lg:max-w-xl">
@@ -213,32 +239,22 @@ export function Workspace() {
               disabledReason="Uploads need MongoDB Atlas and the embedding model connected."
             />
             <VehicleCard state={c} suggestions={suggestions} />
-            <div className="glass flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
-              <label className="flex min-w-0 flex-1 items-center gap-3">
-                <span className="eyebrow shrink-0 text-[10px]!">Language</span>
-                <select className="field py-1.5! text-xs!" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                  {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {c.data && (
+            {c.data && (
+              <div className="flex justify-end px-1">
                 <button
                   type="button"
                   onClick={() => window.confirm("Start a new case? This one stays on the server but will no longer open here.") && c.newCase()}
-                  className="shrink-0 text-xs text-fog-500 hover:text-fog-100"
+                  className="text-xs text-fog-500 hover:text-fog-100"
                 >
                   New case
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           <div className="glass flex flex-col overflow-hidden rounded-2xl">
             <div role="tablist" aria-label="Workspace" className="flex items-center gap-1 border-b border-white/[0.07] px-3 pt-2">
-              {(["chat", "report"] as const).map((t) => (
+              {(["chat", "visual", "health", "battery", "report"] as const).map((t) => (
                 <button
                   key={t}
                   role="tab"
@@ -246,16 +262,32 @@ export function Workspace() {
                   onClick={() => setTab(t)}
                   className={`relative px-4 py-2.5 text-sm transition-colors ${tab === t ? "text-fog-100" : "text-fog-500 hover:text-fog-300"}`}
                 >
-                  {t === "chat" ? "Chat" : "Investigation report"}
+                  {t === "chat" ? "Chat" : t === "visual" ? "Visual locator" : t === "health" ? "Battery health" : t === "battery" ? "Battery map" : "Investigation report"}
                   {t === "report" && c.report && <span className="ml-2 inline-block size-1.5 rounded-full bg-volt-400 align-middle" />}
                   {tab === t && <motion.span layoutId="ws-tab" className="absolute inset-x-3 -bottom-px h-px bg-volt-400" />}
                 </button>
               ))}
               {c.loading && <span className="ml-auto pr-3 font-mono text-[11px] text-fog-500">Loading case…</span>}
+              {tab === "chat" && c.messages.length > 0 && (
+                <button
+                  type="button"
+                  disabled={Boolean(c.turn && !c.turn.error)}
+                  onClick={() => window.confirm("Clear this conversation? Uploaded documents are kept, and the investigation report is removed.") && void c.clearChat().catch(() => undefined)}
+                  className="ml-auto pr-3 text-xs text-fog-500 transition-colors hover:text-fog-100 disabled:opacity-40"
+                >
+                  Clear chat
+                </button>
+              )}
             </div>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={tab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} role="tabpanel">
-                {tab === "chat" ? (
+                {tab === "health" ? (
+                  <BatteryDashboard onUpload={() => setTab("chat")} />
+                ) : tab === "visual" ? (
+                  <VisualLocator state={c} language={language} />
+                ) : tab === "battery" ? (
+                  <BatteryMap hits={hits} modules={modules} basis={(c.turn?.user ?? lastUser?.content)?.slice(0, 70)} />
+                ) : tab === "chat" ? (
                   <ChatPanel
                     state={c}
                     language={language}

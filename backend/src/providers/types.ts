@@ -10,12 +10,17 @@ export interface ChatTurn {
   content: string;
 }
 
+export interface LlmImage {
+  mimeType: string;
+  data: Buffer;
+}
+
 /** Minimal surface FixSkrew needs from a language model. */
 export interface LlmProvider {
   readonly name: "anthropic" | "gemini";
   model(tier: ModelTier): string;
   /** JSON output validated against `schema`. Throws LlmError on refusal or invalid output. */
-  structured<T>(opts: { system: string; user: string; schema: z.ZodType<T>; effort: Effort; tier: ModelTier }): Promise<T>;
+  structured<T>(opts: { system: string; user: string; schema: z.ZodType<T>; effort: Effort; tier: ModelTier; images?: LlmImage[] }): Promise<T>;
   text(opts: { system: string; user: string; effort: Effort; tier: ModelTier }): Promise<string>;
   stream(opts: { system: string; history: ChatTurn[]; user: string; effort: Effort; tier: ModelTier; onText: (t: string) => void }): Promise<string>;
 }

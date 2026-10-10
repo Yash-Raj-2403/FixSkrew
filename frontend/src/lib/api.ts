@@ -172,6 +172,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   sources?: Source[];
+  mode?: "no_sources" | "general";
   createdAt: string;
 }
 
@@ -209,18 +210,18 @@ function uploadWithProgress(url: string, files: File[], onProgress: (fraction: n
 export interface ChatHandlers {
   onSources: (sources: Source[], vehicleMatch: DiagnoseResult["retrieval"]["vehicleMatch"]) => void;
   onDelta: (text: string) => void;
-  onDone: (messages: { user: ChatMessage; assistant: ChatMessage }) => void;
+  onDone: (messages: { user: ChatMessage; assistant: ChatMessage; replaced?: boolean }) => void;
   onError: (message: string) => void;
 }
 
 /** POST a chat message and consume the Server-Sent Events reply. */
-async function chatStream(caseId: string, message: string, language: string, h: ChatHandlers, signal?: AbortSignal) {
+async function chatStream(caseId: string, message: string, language: string, h: ChatHandlers, signal?: AbortSignal, general = false) {
   let res: Response;
   try {
     res = await fetch(`${BASE}/api/cases/${caseId}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, language }),
+      body: JSON.stringify({ message, language, general }),
       signal,
     });
   } catch {
@@ -271,14 +272,45 @@ export const api = {
   updateVehicle: (id: string, vehicle: Vehicle) => request<Case>(`/api/cases/${id}/vehicle`, { method: "PUT", body: JSON.stringify(vehicle) }),
   uploadDocuments: (id: string, files: File[], onProgress: (fraction: number) => void) =>
     uploadWithProgress(`${BASE}/api/cases/${id}/documents`, files, onProgress),
+  clearMessages: (id: string) => request<Case>(`/api/cases/${id}/messages`, { method: "DELETE" }),
   removeDocument: (id: string, docId: string) => request<Case>(`/api/cases/${id}/documents/${docId}`, { method: "DELETE" }),
   chat: chatStream,
+  analyseVisual,
   generateReport: (id: string, language: string) =>
     request<DiagnoseResult>(`/api/cases/${id}/report`, { method: "POST", body: JSON.stringify({ language }) }),
   getReport: (id: string, signal?: AbortSignal) => request<DiagnoseResult>(`/api/cases/${id}/report`, { signal }),
   componentSources: (id: ComponentId, signal?: AbortSignal) =>
     request<{ component: ComponentId; sources: ComponentSource[] }>(`/api/components/${id}/sources`, { signal }),
 };
+
+export interface VisualMarker {
+  label: string;
+  priority: "inspect_first" | "check_second" | "context";
+  reason: string;
+  /** 0-1000 relative to the image. */
+  box: { ymin: number; xmin: number; ymax: number; xmax: number };
+}
+export interface VisualResult {
+  view: string;
+  vehicle_seen: string;
+  markers: VisualMarker[];
+  note: string;
+}
+
+async function analyseVisual(id: string, image: Blob, language: string, signal?: AbortSignal): Promise<VisualResult> {
+  const body = new FormData();
+  body.append("language", language);
+  body.append("image", image, "frame.jpg");
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/api/cases/${id}/visual`, { method: "POST", body, signal });
+  } catch {
+    throw new ApiError("The diagnostic service could not be reached.", 0, "unreachable");
+  }
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json) throw new ApiError(json?.message ?? `The diagnostic service returned an error (${res.status}).`, res.status, json?.error ?? "http_error");
+  return json as VisualResult;
+}
 
 export const DOC_TYPE_LABEL: Record<string, string> = {
   service_manual: "Service manual",

@@ -51,7 +51,7 @@ export const config = {
     /** Model for investigation reports. */
     model: env.LLM_MODEL || (llmProvider === "gemini" ? "gemini-flash-latest" : "claude-opus-5-5"),
     /** Model for chat replies, document extraction and translation. */
-    fastModel: env.LLM_FAST_MODEL || env.LLM_MODEL || (llmProvider === "gemini" ? "gemini-flash-latest" : "claude-opus-5-5"),
+    fastModel: env.LLM_FAST_MODEL || (llmProvider === "gemini" ? "gemini-flash-lite-latest" : env.LLM_MODEL || "claude-opus-5-5"),
     effort: (env.LLM_EFFORT || "high") as "low" | "medium" | "high" | "xhigh" | "max",
   },
 
