@@ -1,0 +1,15 @@
+measurement,value,unit,condition
+State of charge,54,%,
+State of health,93,%,BMS estimate
+Pack voltage,361.2,V,at rest
+Highest cell group voltage,3.771,V,
+Lowest cell group voltage,3.754,V,
+Cell voltage spread at rest,0.017,V,
+Pack temperature average,17.5,C,
+Insulation resistance whole pack,310,ohm/V,two days after the wash
+Insulation front drive unit branch,1900,ohm/V,tested alone
+Insulation rear drive unit branch,1850,ohm/V,tested alone
+Insulation onboard charger branch,1780,ohm/V,tested alone
+Insulation compressor and heater branch,1700,ohm/V,tested alone
+Insulation charging inlet and harness branch,1820,ohm/V,tested alone
+Idle pack current,0.3,A,vehicle asleep

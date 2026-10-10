@@ -1,0 +1,25 @@
+SYNTHETIC SAMPLE DATA for testing FixSkrew. Not from a real vehicle. VIN, dates and readings are fictional.
+
+SCAN TOOL REPORT  (BMS session)
+Vehicle : Tesla Model 3 Standard Range Plus, 2020, 88,200 km
+VIN     : 5YJ3E1EB4LF000101 (fictional)
+Date    : 2025-09-02 09:14
+Ambient : 21 C
+
+TROUBLE CODES
+P0B3C  ACTIVE  Cell voltage imbalance above limit
+P0A7F  STORED  Battery pack deterioration
+
+FREEZE FRAME (P0B3C, first occurrence)
+ State of charge ........ 71 %
+ Pack voltage ........... 372.5 V
+ Highest cell group ..... 3.918 V (group 30, module 2)
+ Lowest cell group ...... 3.784 V (group 66, module 3)
+ Cell voltage spread .... 0.134 V
+ Pack temperature ....... 21.0 C
+ Odometer ............... 88,200 km
+
+EVENT LOG
+2025-08-11 18:40  P0A7F stored after a full charge ended early at 94 %
+2025-08-29 07:55  P0B3C set while driving, reduced-performance message shown
+2025-09-02 09:14  P0B3C active at rest after 3 h of sleep

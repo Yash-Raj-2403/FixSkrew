@@ -1,0 +1,15 @@
+measurement,value,unit,condition
+State of charge,71,%,at rest after 3 h
+State of health,85,%,BMS estimate
+Pack voltage,372.5,V,at rest
+Highest cell group voltage,3.918,V,group 30 module 2
+Lowest cell group voltage,3.784,V,group 66 module 3
+Cell voltage spread at rest,0.134,V,
+Pack temperature average,21.0,C,
+Module temperature spread,1.8,C,
+Insulation resistance,1620,ohm/V,
+Idle pack current,0.2,A,vehicle asleep
+Lowest cell group voltage under load,3.398,V,group 66 at 150 A discharge
+Neighbouring groups under load,3.585,V,typical at 150 A discharge
+Cell voltage spread under load,0.213,V,150 A discharge
+Spread after balancing charge,0.128,V,100 % held 4 h then 2 h rest

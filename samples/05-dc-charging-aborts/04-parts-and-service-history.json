@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2022-08-30",
+    "odometer_km": 100,
+    "part": "Charge port assembly",
+    "action": "original"
+  },
+  {
+    "date": "2025-09-29",
+    "odometer_km": 37200,
+    "part": "DC fuse (HV junction box)",
+    "action": "measured open circuit, replacement part SYN-FUS-210 ordered"
+  },
+  {
+    "date": "2025-09-29",
+    "odometer_km": 37200,
+    "part": "DC charging cables",
+    "action": "not yet inspected"
+  }
+]

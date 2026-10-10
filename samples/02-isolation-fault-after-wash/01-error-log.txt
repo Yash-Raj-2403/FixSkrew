@@ -1,0 +1,22 @@
+SYNTHETIC SAMPLE DATA for testing FixSkrew. Not from a real vehicle. VIN, dates and readings are fictional.
+
+SCAN TOOL REPORT  (BMS session)
+Vehicle : Tesla Model 3 Long Range, 2021, 51,300 km
+VIN     : 5YJ3E1EA9MF000102 (fictional)
+Date    : 2025-09-09 14:02
+Ambient : 18 C, rain in the previous 24 h
+
+TROUBLE CODES
+P0AA6  STORED  High-voltage isolation fault
+
+FREEZE FRAME (P0AA6)
+ Insulation resistance .. 310 ohm/V
+ State of charge ........ 54 %
+ Pack temperature ....... 17.5 C
+ Odometer ............... 51,300 km
+
+EVENT LOG
+2025-09-06 11:20  car washed with a pressure lance, underbody included
+2025-09-07 08:05  red HV warning on the dash, no drive
+2025-09-08 17:30  warning cleared by itself, car drives
+2025-09-09 14:02  P0AA6 read as stored

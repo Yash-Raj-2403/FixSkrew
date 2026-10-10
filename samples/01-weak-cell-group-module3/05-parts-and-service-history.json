@@ -1,0 +1,32 @@
+[
+  {
+    "date": "2023-04-18",
+    "odometer_km": 52100,
+    "part": "Cabin air filter",
+    "action": "replaced"
+  },
+  {
+    "date": "2024-02-09",
+    "odometer_km": 71400,
+    "part": "12 V battery",
+    "action": "tested, 12.6 V, no action"
+  },
+  {
+    "date": "2024-11-20",
+    "odometer_km": 80200,
+    "part": "Coolant",
+    "action": "level checked, normal"
+  },
+  {
+    "date": "2025-09-02",
+    "odometer_km": 88200,
+    "part": "Module 3 voltage-sense connector",
+    "action": "not yet inspected"
+  },
+  {
+    "date": "2025-09-02",
+    "odometer_km": 88200,
+    "part": "Battery modules",
+    "action": "never replaced, original pack"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "date": "2022-06-01",
+    "odometer_km": 12000,
+    "part": "Charge port assembly",
+    "action": "original, no work"
+  },
+  {
+    "date": "2024-03-14",
+    "odometer_km": 40100,
+    "part": "Pack vent",
+    "action": "never serviced, original"
+  },
+  {
+    "date": "2025-09-06",
+    "odometer_km": 51200,
+    "part": "Underbody",
+    "action": "pressure washed by owner"
+  },
+  {
+    "date": "2025-09-09",
+    "odometer_km": 51300,
+    "part": "HV harness",
+    "action": "visual check only, no damage seen"
+  }
+]

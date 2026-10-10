@@ -6,7 +6,7 @@ import { DTC_PATTERN, vehicleKey } from "./catalog.js";
 import { chunkText, extractSections, isSupported, MIN_CHUNK_CHARS, UnsupportedFileError } from "./documents.js";
 import { embed } from "./embeddings.js";
 import { retrieve } from "./retrieval.js";
-import { describeCaseDocuments, extractDocumentFacts, streamChatReply, LlmError, LlmUnavailableError } from "./llm.js";
+import { describeCaseDocuments, extractDocumentFacts, streamChatReply, addCitations, LlmError, LlmUnavailableError } from "./llm.js";
 import { diagnose, toSource, type DiagnoseResponse } from "./diagnose.js";
 import { DiagnoseRequest } from "./schemas.js";
 
@@ -179,14 +179,13 @@ export async function deleteCase(id: string): Promise<void> {
   await (await getCases()).deleteOne({ _id: id });
 }
 
-/** Replace this-turn citation ids with readable source names for use in later turns. */
+/**
+ * Earlier turns are shown to the model without citation markers. Their ids refer to excerpts
+ * that are no longer attached, and readable titles in brackets get imitated in place of ids.
+ */
 function rewriteCitations(m: CaseMessage): string {
   if (m.role !== "assistant" || !m.sources?.length) return m.content;
-  const byId = new Map(m.sources.map((s) => [s.id, s]));
-  return m.content.replace(/\[(S\d+)\]/g, (whole, sid: string) => {
-    const s = byId.get(sid);
-    return s ? `[${s.sourceTitle}${s.page != null ? `, p. ${s.page}` : ""}]` : whole;
-  });
+  return m.content.replace(/\s?\[S\d+\]/g, "");
 }
 
 function sseWrite(res: Response, event: string, data: unknown) {
@@ -194,11 +193,9 @@ function sseWrite(res: Response, event: string, data: unknown) {
 }
 
 /** Answer a chat message over Server-Sent Events: `sources`, `delta`*, then `done` or `error`. */
-const NO_SOURCES_TEXT =
-  "I couldn't find anything about this in your documents or the knowledge base, so I can't answer it with sources. I can give a general answer from general engineering knowledge instead. It won't be cited, so treat it as unverified.";
 const GENERAL_PREFIX = "General answer, not from your documents or the knowledge base (unverified):\n\n";
 
-export async function chat(id: string, message: string, language: string, res: Response, general = false) {
+export async function chat(id: string, message: string, language: string, res: Response) {
   const c = await loadCase(id);
   const text = message.trim();
   if (!text) throw new CaseInputError("Write a message first.");
@@ -209,8 +206,10 @@ export async function chat(id: string, message: string, language: string, res: R
   res.on("close", () => (aborted = true));
 
   try {
-    // Recent user turns give the retrieval query context ("what about the coolant pump?").
-    const recentUser = c.messages.filter((m) => m.role === "user").slice(-2).map((m) => m.content);
+    // Search on the current message alone so an earlier topic cannot dominate. Only a short or
+    // back-referring follow-up ("what about the pump?") borrows the previous user turn for context.
+    const followUp = text.length < 40 || /^(and|also|what about|how about|why|so|then|it|that|those|this)\b/i.test(text);
+    const recentUser = followUp ? c.messages.filter((m) => m.role === "user").slice(-1).map((m) => m.content) : [];
     const codes = [...new Set([...text.toUpperCase().match(DTC_PATTERN) ?? []])];
     const { evidence, vehicleMatch } = await retrieve({
       query: [...recentUser, text].join("\n"),
@@ -223,17 +222,8 @@ export async function chat(id: string, message: string, language: string, res: R
     const sources: SourceRef[] = evidence.map(toSource);
     sseWrite(res, "sources", { sources, vehicleMatch });
 
-    // Nothing to cite: say so instead of answering from the model's memory. The user can ask
-    // for a general answer, which is labelled as uncited.
-    const useGeneral = evidence.length === 0 && general;
-    if (evidence.length === 0 && !general) {
-      const userMsg: CaseMessage = { id: randomUUID(), role: "user", content: text, createdAt: new Date() };
-      const assistantMsg: CaseMessage = { id: randomUUID(), role: "assistant", content: NO_SOURCES_TEXT, mode: "no_sources", createdAt: new Date() };
-      sseWrite(res, "delta", { text: NO_SOURCES_TEXT });
-      await (await getCases()).updateOne({ _id: id }, { $push: { messages: { $each: [userMsg, assistantMsg] } }, $set: { updatedAt: new Date() } });
-      sseWrite(res, "done", { user: userMsg, assistant: assistantMsg });
-      return;
-    }
+    // Nothing to cite: answer in general mode, clearly labelled as uncited, instead of refusing.
+    const useGeneral = evidence.length === 0;
     if (useGeneral) sseWrite(res, "delta", { text: GENERAL_PREFIX });
 
     const history = c.messages.slice(-LIMITS.historyTurns * 2).map((m) => ({ role: m.role, content: rewriteCitations(m) }));
@@ -254,6 +244,18 @@ export async function chat(id: string, message: string, language: string, res: R
     // Models sometimes group citations ("[S2, S3]"); split them so each one is checked and linked.
     const split = rawReply.replace(/\[(S\d+(?:\s*,\s*S\d+)+)\]/g, (_m, ids: string) => ids.split(/\s*,\s*/).map((id) => `[${id}]`).join(" "));
     let reply = useGeneral ? GENERAL_PREFIX + rawReply : split.replace(/\s?\[(S\d+)\]/g, (m, sid) => (valid.has(sid) ? m : ""));
+    if (!useGeneral && ![...reply.matchAll(/\[(S\d+)\]/g)].length) {
+      // The model answered without usable [S#] ids. Ask once for the same answer with each claim
+      // tied to an excerpt (or dropped); the final message replaces the streamed text.
+      try {
+        const repaired = (await addCitations({ answer: rawReply, evidence }))
+          .replace(/\[(S\d+(?:\s*,\s*S\d+)+)\]/g, (_m, ids: string) => ids.split(/\s*,\s*/).map((i) => `[${i}]`).join(" "))
+          .replace(/\s?\[(S\d+)\]/g, (m, sid) => (valid.has(sid) ? m : ""));
+        if ([...repaired.matchAll(/\[(S\d+)\]/g)].length) reply = repaired;
+      } catch (err) {
+        console.error("[citations]", (err as Error).message);
+      }
+    }
     if (!useGeneral && ![...reply.matchAll(/\[(S\d+)\]/g)].length) {
       const note = "\n\nNote: this reply does not cite a source, so treat it as unverified.";
       reply += note;

@@ -144,8 +144,6 @@ export async function retrieve(opts: RetrieveOptions): Promise<RetrievalResult> 
     ...h,
     rank:
       (h.score as number) +
-      // Small boost for the technician's own documents about this vehicle.
-      (h.scope !== "kb" ? 0.02 : 0) +
       (opts.focusComponent && (h.components as string[] | undefined)?.includes(opts.focusComponent) ? 0.03 : 0),
   }));
 

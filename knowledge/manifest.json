@@ -17,15 +17,7 @@
           2023
         ]
       },
-      "components": [
-        "battery-pack",
-        "battery-modules",
-        "bms",
-        "cooling-plate",
-        "hv-junction-box",
-        "hv-harness",
-        "charging-port"
-      ],
+      "components": [],
       "componentRules": [
         {
           "pattern": "cooling plate|coolant|pump|thermal|heater",
@@ -82,15 +74,7 @@
           2023
         ]
       },
-      "components": [
-        "battery-pack",
-        "battery-modules",
-        "bms",
-        "cooling-plate",
-        "hv-junction-box",
-        "hv-harness",
-        "charging-port"
-      ],
+      "components": [],
       "componentRules": [
         {
           "pattern": "cooling plate|coolant|pump|thermal|heater",
@@ -147,15 +131,7 @@
           2023
         ]
       },
-      "components": [
-        "battery-pack",
-        "battery-modules",
-        "bms",
-        "cooling-plate",
-        "hv-junction-box",
-        "hv-harness",
-        "charging-port"
-      ],
+      "components": [],
       "componentRules": [
         {
           "pattern": "cooling plate|coolant|pump|thermal|heater",
@@ -212,15 +188,7 @@
           2023
         ]
       },
-      "components": [
-        "battery-pack",
-        "battery-modules",
-        "bms",
-        "cooling-plate",
-        "hv-junction-box",
-        "hv-harness",
-        "charging-port"
-      ],
+      "components": [],
       "componentRules": [
         {
           "pattern": "cooling plate|coolant|pump|thermal|heater",
@@ -256,6 +224,335 @@
           "pattern": "module|cell|spread",
           "components": [
             "battery-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tesla-model-3/05-symptom-and-code-cross-reference.md",
+      "title": "SYNTHETIC TEST: Model 3 Symptom, Code and Component Cross-Reference",
+      "docType": "other",
+      "publisher": "Synthetic test data (not Tesla)",
+      "language": "en",
+      "vehicle": {
+        "make": "Tesla",
+        "model": "Model 3",
+        "years": [
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
+      },
+      "components": [],
+      "componentRules": [
+        {
+          "pattern": "cooling plate|coolant|pump|thermal|heater",
+          "components": [
+            "cooling-plate"
+          ]
+        },
+        {
+          "pattern": "BMS|battery management",
+          "components": [
+            "bms"
+          ]
+        },
+        {
+          "pattern": "junction box|contactor|pre-charge",
+          "components": [
+            "hv-junction-box"
+          ]
+        },
+        {
+          "pattern": "harness|interlock|HVIL",
+          "components": [
+            "hv-harness"
+          ]
+        },
+        {
+          "pattern": "charge port|charging inlet",
+          "components": [
+            "charging-port"
+          ]
+        },
+        {
+          "pattern": "module|cell|spread",
+          "components": [
+            "battery-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tesla-model-3/06-measurement-to-component-guide.md",
+      "title": "SYNTHETIC TEST: Model 3 Measurement to Component Guide",
+      "docType": "other",
+      "publisher": "Synthetic test data (not Tesla)",
+      "language": "en",
+      "vehicle": {
+        "make": "Tesla",
+        "model": "Model 3",
+        "years": [
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
+      },
+      "components": [],
+      "componentRules": [
+        {
+          "pattern": "cooling plate|coolant|pump|thermal|heater",
+          "components": [
+            "cooling-plate"
+          ]
+        },
+        {
+          "pattern": "BMS|battery management",
+          "components": [
+            "bms"
+          ]
+        },
+        {
+          "pattern": "junction box|contactor|pre-charge",
+          "components": [
+            "hv-junction-box"
+          ]
+        },
+        {
+          "pattern": "harness|interlock|HVIL",
+          "components": [
+            "hv-harness"
+          ]
+        },
+        {
+          "pattern": "charge port|charging inlet",
+          "components": [
+            "charging-port"
+          ]
+        },
+        {
+          "pattern": "module|cell|spread",
+          "components": [
+            "battery-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tesla-model-3/07-diagnostic-logs-ii.md",
+      "title": "SYNTHETIC TEST: Model 3 Diagnostic Logs II",
+      "docType": "diagnostic_log",
+      "publisher": "Synthetic test data (not Tesla)",
+      "language": "en",
+      "vehicle": {
+        "make": "Tesla",
+        "model": "Model 3",
+        "years": [
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
+      },
+      "components": [],
+      "componentRules": [
+        {
+          "pattern": "cooling plate|coolant|pump|thermal|heater",
+          "components": [
+            "cooling-plate"
+          ]
+        },
+        {
+          "pattern": "BMS|battery management",
+          "components": [
+            "bms"
+          ]
+        },
+        {
+          "pattern": "junction box|contactor|pre-charge",
+          "components": [
+            "hv-junction-box"
+          ]
+        },
+        {
+          "pattern": "harness|interlock|HVIL",
+          "components": [
+            "hv-harness"
+          ]
+        },
+        {
+          "pattern": "charge port|charging inlet",
+          "components": [
+            "charging-port"
+          ]
+        },
+        {
+          "pattern": "module|cell|spread",
+          "components": [
+            "battery-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tesla-model-3/08-repair-histories-ii.md",
+      "title": "SYNTHETIC TEST: Model 3 Repair Histories II",
+      "docType": "repair_history",
+      "publisher": "Synthetic test data (not Tesla)",
+      "language": "en",
+      "vehicle": {
+        "make": "Tesla",
+        "model": "Model 3",
+        "years": [
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
+      },
+      "components": [],
+      "componentRules": [
+        {
+          "pattern": "cooling plate|coolant|pump|thermal|heater",
+          "components": [
+            "cooling-plate"
+          ]
+        },
+        {
+          "pattern": "BMS|battery management",
+          "components": [
+            "bms"
+          ]
+        },
+        {
+          "pattern": "junction box|contactor|pre-charge",
+          "components": [
+            "hv-junction-box"
+          ]
+        },
+        {
+          "pattern": "harness|interlock|HVIL",
+          "components": [
+            "hv-harness"
+          ]
+        },
+        {
+          "pattern": "charge port|charging inlet",
+          "components": [
+            "charging-port"
+          ]
+        },
+        {
+          "pattern": "module|cell|spread",
+          "components": [
+            "battery-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "general-ev/ev-battery-troubleshooting-guide.pdf",
+      "title": "General EV Battery Troubleshooting Guide",
+      "docType": "other",
+      "publisher": "FixSkrew general guidance (not manufacturer-specific)",
+      "language": "en",
+      "vehicle": {},
+      "components": [],
+      "componentRules": [
+        {
+          "pattern": "cooling|coolant|pump|thermal|overheat|heater|chiller",
+          "components": [
+            "cooling-plate"
+          ]
+        },
+        {
+          "pattern": "BMS|battery management|state of charge|state of health|SoH|calibrat",
+          "components": [
+            "bms"
+          ]
+        },
+        {
+          "pattern": "contactor|pre-charge|junction",
+          "components": [
+            "hv-junction-box"
+          ]
+        },
+        {
+          "pattern": "harness|interlock|HVIL|isolation|insulation",
+          "components": [
+            "hv-harness"
+          ]
+        },
+        {
+          "pattern": "charge port|charging port|inlet|charger|charging",
+          "components": [
+            "charging-port"
+          ]
+        },
+        {
+          "pattern": "module|cell|imbalance|spread",
+          "components": [
+            "battery-modules"
+          ]
+        },
+        {
+          "pattern": "pack|swelling|flood|damage",
+          "components": [
+            "battery-pack"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "general-ev/ev-drive-system-troubleshooting-guide.pdf",
+      "title": "General EV Drive System Troubleshooting Guide",
+      "docType": "other",
+      "publisher": "FixSkrew general guidance (not manufacturer-specific)",
+      "language": "en",
+      "vehicle": {},
+      "components": [],
+      "componentRules": [
+        {
+          "pattern": "front motor|front drive",
+          "components": [
+            "front-motor"
+          ]
+        },
+        {
+          "pattern": "rear motor|rear drive",
+          "components": [
+            "rear-motor"
+          ]
+        },
+        {
+          "pattern": "drive unit|inverter|reduction gear|resolver",
+          "components": [
+            "front-motor",
+            "rear-motor"
+          ]
+        },
+        {
+          "pattern": "isolation|HV connector|phase cable",
+          "components": [
+            "hv-harness"
+          ]
+        },
+        {
+          "pattern": "on-board charger|charge-port|charging",
+          "components": [
+            "charging-port"
+          ]
+        },
+        {
+          "pattern": "coolant|cooling",
+          "components": [
+            "cooling-plate"
           ]
         }
       ]

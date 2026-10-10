@@ -1,0 +1,14 @@
+measurement,value,unit,condition
+State of charge,88,%,end of fast charge
+State of health,95,%,BMS estimate
+Pack voltage,391.4,V,end of fast charge
+Highest cell group voltage,4.083,V,end of fast charge
+Lowest cell group voltage,4.071,V,end of fast charge
+Cell voltage spread at rest,0.019,V,after cooling to 22 C
+Cell voltage spread under load,0.176,V,hot at end of fast charge
+Pack temperature at end of DC fast charge,54.1,C,
+Module temperature spread,7.4,C,end of fast charge
+Pump speed commanded,80,%,
+Pump speed actual,81,%,
+Coolant level,0.5 L low,,below the mark
+Insulation resistance,1750,ohm/V,

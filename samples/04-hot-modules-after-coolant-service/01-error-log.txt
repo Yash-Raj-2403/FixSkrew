@@ -1,0 +1,21 @@
+SYNTHETIC SAMPLE DATA for testing FixSkrew. Not from a real vehicle. VIN, dates and readings are fictional.
+
+SCAN TOOL REPORT  (BMS session, after DC fast charge)
+Vehicle : Tesla Model 3 Performance, 2021, 47,900 km
+VIN     : 5YJ3E1EC5MF000104 (fictional)
+Date    : 2025-09-22 16:45
+Ambient : 24 C
+
+TROUBLE CODES
+P0B3C  STORED  Cell voltage imbalance above limit
+
+FREEZE FRAME (P0B3C)
+ Pack temperature ....... 54.1 C
+ Module temperature spread  7.4 C
+ Cell voltage spread under load  0.176 V
+ State of charge ........ 88 %
+
+EVENT LOG
+2025-09-18  coolant replaced at an independent workshop
+2025-09-21 19:10  fast charge slowed after 12 minutes, battery warning shown
+2025-09-22 16:45  P0B3C stored, no thermal code stored

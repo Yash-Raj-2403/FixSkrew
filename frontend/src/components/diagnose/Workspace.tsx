@@ -7,11 +7,13 @@ import { Report } from "../Report";
 import { EncryptedText } from "../ui/encrypted-text";
 import { SquigglyText } from "../ui/squiggly-text";
 import { DocumentsCard } from "./CasePanels";
+import { api, rankComponents, type RankedPart } from "../../lib/api";
+import type { ComponentId } from "../../data/components";
 import { VehicleCard } from "./VehicleCard";
 import { ChatPanel } from "./ChatPanel";
 import { BatteryMap } from "./BatteryMap";
 import { BatteryDashboard } from "../battery/BatteryDashboard";
-import { VisualLocator } from "./VisualLocator";
+import { VisualLocator, type LocateRequest } from "./VisualLocator";
 
 function serviceLabel(s: string) {
   return s === "ready" ? "Ready" : s === "not_configured" ? "Not configured" : "Unreachable";
@@ -188,6 +190,31 @@ export function Workspace() {
     ),
   ];
 
+  // Parts ranked by the evidence behind the latest answer drive the Chat button and the Visual locator.
+  const flagged = rankComponents(lastAssistant?.sources);
+  const [ranked, setRanked] = useState<{ forId: string; parts: RankedPart[] } | null>(null);
+  const caseId = c.data?.id;
+  const lastId = lastAssistant?.id;
+  useEffect(() => {
+    if (!caseId || !lastId) return setRanked(null);
+    const ctrl = new AbortController();
+    api
+      .rankedParts(caseId, ctrl.signal)
+      .then((r) => setRanked({ forId: lastId, parts: r.parts.slice(0, 3) }))
+      // Without a ranking the locator still works from the flagged components.
+      .catch(() => !ctrl.signal.aborted && setRanked({ forId: lastId, parts: [] }));
+    return () => ctrl.abort();
+  }, [caseId, lastId]);
+
+  const [manual, setManual] = useState<LocateRequest | null>(null);
+  const rankedNow = ranked && ranked.forId === lastId ? ranked.parts : null;
+  const auto: LocateRequest | null =
+    lastAssistant && rankedNow && (rankedNow.length || flagged.length)
+      ? { components: flagged as ComponentId[], parts: rankedNow, key: `${lastAssistant.id}:${rankedNow.map((p) => p.id).join(",")}` }
+      : null;
+  // A manual "Locate" click wins until the next answer arrives.
+  const locate = manual && (!auto || manual.key.startsWith(auto.key)) ? manual : auto;
+
   // Jump to the report once it exists.
   useEffect(() => {
     if (c.report && c.reportState.kind === "idle") setTab("report");
@@ -279,12 +306,14 @@ export function Workspace() {
                 </button>
               )}
             </div>
+            {/* Kept mounted so the loaded photo and markers survive tab switches. */}
+            <div className={tab === "visual" ? undefined : "pointer-events-none fixed top-0 -left-[10000px] w-[900px]"} aria-hidden={tab !== "visual"} inert={tab !== "visual"}>
+              <VisualLocator state={c} language={language} locate={locate} />
+            </div>
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={tab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} role="tabpanel">
+              {tab !== "visual" && <motion.div key={tab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} role="tabpanel">
                 {tab === "health" ? (
                   <BatteryDashboard onUpload={() => setTab("chat")} />
-                ) : tab === "visual" ? (
-                  <VisualLocator state={c} language={language} />
                 ) : tab === "battery" ? (
                   <BatteryMap hits={hits} modules={modules} basis={(c.turn?.user ?? lastUser?.content)?.slice(0, 70)} />
                 ) : tab === "chat" ? (
@@ -295,11 +324,17 @@ export function Workspace() {
                     notReadyReason={notReadyReason(health)}
                     focus={agentFocus}
                     clearFocus={() => setUi({ agentFocus: null })}
+                    rankedParts={rankedNow ?? undefined}
+                    rankedFor={lastId}
+                    onLocate={() => {
+                      if (auto) setManual({ ...auto, key: `${auto.key}#${Date.now()}` });
+                      setTab("visual");
+                    }}
                   />
                 ) : (
                   <ReportTab state={c} language={language} />
                 )}
-              </motion.div>
+              </motion.div>}
             </AnimatePresence>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import type { PartDoc } from "./parts.js";
 import { MongoClient, type Collection, type Db } from "mongodb";
 import { config } from "./config.js";
 import type { ComponentId, DocType } from "./catalog.js";
@@ -65,6 +66,10 @@ async function getDb(): Promise<Db> {
 
 export async function getCollection(): Promise<Collection<ChunkDoc>> {
   return (await getDb()).collection<ChunkDoc>(config.mongo.collection);
+}
+
+export async function getParts(): Promise<Collection<PartDoc>> {
+  return (await getDb()).collection<PartDoc>("parts");
 }
 
 export async function getCases(): Promise<Collection<CaseDoc>> {

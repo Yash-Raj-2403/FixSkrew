@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2025-09-18",
+    "odometer_km": 47800,
+    "part": "Coolant",
+    "action": "drained and refilled at an independent workshop, no bleed procedure recorded"
+  },
+  {
+    "date": "2025-09-18",
+    "odometer_km": 47800,
+    "part": "Coolant pump",
+    "action": "not replaced"
+  },
+  {
+    "date": "2025-09-22",
+    "odometer_km": 47900,
+    "part": "Battery modules",
+    "action": "original, never replaced"
+  }
+]

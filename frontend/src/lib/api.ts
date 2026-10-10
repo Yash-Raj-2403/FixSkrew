@@ -276,6 +276,7 @@ export const api = {
   removeDocument: (id: string, docId: string) => request<Case>(`/api/cases/${id}/documents/${docId}`, { method: "DELETE" }),
   chat: chatStream,
   analyseVisual,
+  rankedParts: (id: string, signal?: AbortSignal) => request<{ forMessageId: string | null; catalogue: number; parts: RankedPart[] }>(`/api/cases/${id}/parts`, { signal }),
   generateReport: (id: string, language: string) =>
     request<DiagnoseResult>(`/api/cases/${id}/report`, { method: "POST", body: JSON.stringify({ language }) }),
   getReport: (id: string, signal?: AbortSignal) => request<DiagnoseResult>(`/api/cases/${id}/report`, { signal }),
@@ -285,6 +286,8 @@ export const api = {
 
 export interface VisualMarker {
   label: string;
+  /** Catalogue id of the ranked part this marker shows, or empty. */
+  part_id?: string;
   priority: "inspect_first" | "check_second" | "context";
   reason: string;
   /** 0-1000 relative to the image. */
@@ -295,11 +298,17 @@ export interface VisualResult {
   vehicle_seen: string;
   markers: VisualMarker[];
   note: string;
+  /** Ranked part ids that are not visible in this view. */
+  missing_parts?: string[];
+  /** Ranked parts sealed inside another part that is marked, as { partId: containerId }. */
+  inside_parts?: Record<string, string>;
 }
 
-async function analyseVisual(id: string, image: Blob, language: string, signal?: AbortSignal): Promise<VisualResult> {
+async function analyseVisual(id: string, image: Blob, language: string, components: ComponentId[], parts: { id: string; rank: number }[], signal?: AbortSignal): Promise<VisualResult> {
   const body = new FormData();
   body.append("language", language);
+  body.append("components", components.join(","));
+  body.append("parts", JSON.stringify(parts));
   body.append("image", image, "frame.jpg");
   let res: Response;
   try {
@@ -322,3 +331,23 @@ export const DOC_TYPE_LABEL: Record<string, string> = {
   uploaded_document: "Uploaded to this case",
   other: "Document",
 };
+
+/** The parts the cited passages point at most often, strongest first. */
+export function rankComponents(sources: { components: string[] }[] | undefined, n = 3): ComponentId[] {
+  const count = new Map<string, number>();
+  for (const s of sources ?? []) for (const id of s.components) count.set(id, (count.get(id) ?? 0) + 1);
+  return [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([id]) => id as ComponentId);
+}
+
+/** A vehicle part ranked by the evidence behind the latest answer. */
+export interface RankedPart {
+  id: string;
+  name: string;
+  component: ComponentId;
+  description: string;
+  rank: number;
+  /** 0 to 1, relative to the strongest part. */
+  score: number;
+  reasons: string[];
+  sourceIds: string[];
+}

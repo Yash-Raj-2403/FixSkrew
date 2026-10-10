@@ -5,6 +5,7 @@
  *
  * Ingested documents form the shared knowledge base (scope "kb"); files that users upload
  * to a diagnosis case are stored separately with the case's scope.
+ *   npm run ingest -w backend -- --retag     # recompute component tags only, no embeddings
  *   npm run ingest -w backend -- --dry-run   # parse + chunk only, no embeddings or writes
  *   npm run ingest -w backend -- --only manuals/hv-battery.pdf
  *
@@ -17,7 +18,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod/v4";
 import { chunkText, extractSections, MIN_CHUNK_CHARS, type Section } from "../src/documents.js";
-import { COMPONENT_IDS, DOC_TYPES, DTC_PATTERN, vehicleKey, type ComponentId } from "../src/catalog.js";
+import { COMPONENT_IDS, DOC_TYPES, DTC_COMPONENTS, DTC_PATTERN, vehicleKey, type ComponentId } from "../src/catalog.js";
 import { config } from "../src/config.js";
 import { getCollection, closeMongo, type ChunkDoc } from "../src/db.js";
 import { embed } from "../src/embeddings.js";
@@ -58,17 +59,20 @@ async function loadSections(doc: ManifestDoc): Promise<Section[]> {
   return extractSections(new Uint8Array(await readFile(abs)), abs);
 }
 
-function tagComponents(text: string, doc: ManifestDoc): ComponentId[] {
+export function tagComponents(text: string, doc: ManifestDoc): ComponentId[] {
   const tags = new Set<ComponentId>(doc.components);
   for (const rule of doc.componentRules) {
     if (new RegExp(rule.pattern, "i").test(text)) rule.components.forEach((c) => tags.add(c));
   }
+  for (const code of text.toUpperCase().match(DTC_PATTERN) ?? []) DTC_COMPONENTS[code]?.forEach((c) => tags.add(c));
   return [...tags];
 }
 
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
+  // --retag: recompute component tags on stored chunks without re-embedding (no API quota used).
+  const retag = args.includes("--retag");
   const only = args.includes("--only") ? args[args.indexOf("--only") + 1] : undefined;
 
   const manifestPath = path.join(KNOWLEDGE_DIR, "manifest.json");
@@ -120,6 +124,11 @@ async function main() {
     }
     console.log(`${doc.file}: ${sections.length} sections -> ${pending.length} chunks`);
     total += pending.length;
+    if (retag && col && pending.length) {
+      const res = await col.bulkWrite(pending.map((c, i) => ({ updateOne: { filter: { _id: `${docId}:${i}` as any }, update: { $set: { components: c.components, dtcs: c.dtcs } } } })));
+      console.log(`  retagged ${res.modifiedCount} of ${pending.length} chunks`);
+      continue;
+    }
     if (dryRun || !col || pending.length === 0) continue;
 
     // Prefix chunks with title/section so the embedding carries document context.

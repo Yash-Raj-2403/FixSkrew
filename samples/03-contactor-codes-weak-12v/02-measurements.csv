@@ -1,0 +1,14 @@
+measurement,value,unit,condition
+State of charge,63,%,
+State of health,92,%,BMS estimate
+Pack voltage,368.1,V,at rest
+Highest cell group voltage,3.836,V,
+Lowest cell group voltage,3.829,V,
+Cell voltage spread at rest,0.007,V,
+Pack temperature average,9.0,C,
+12 V battery voltage at wake-up,10.5,V,
+Pre-charge time to 95 percent bus voltage,2.7,s,
+Pre-charge resistor,within range,,measured with the pack de-energised
+Contactor coil resistance,within range,,against the parts list
+Insulation resistance,1900,ohm/V,
+Idle pack current,0.3,A,

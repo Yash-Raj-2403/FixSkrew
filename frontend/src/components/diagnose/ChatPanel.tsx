@@ -1,32 +1,48 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { COMPONENT_BY_ID, type ComponentId } from "../../data/components";
-import { DOC_TYPE_LABEL, type ChatMessage, type Source } from "../../lib/api";
+import { DOC_TYPE_LABEL, rankComponents, type RankedPart, type ChatMessage, type Source } from "../../lib/api";
 import type { CaseState } from "../../lib/useCase";
 import { setUi } from "../../lib/store";
 import { RichText } from "./RichText";
 import { EncryptedText } from "../ui/encrypted-text";
 
+const isSynthetic = (s: Source) => /synthetic/i.test(s.sourceTitle) || /synthetic/i.test(s.publisher ?? "");
+
 function SourcesList({ sources, anchorPrefix }: { sources: Source[]; anchorPrefix: string }) {
-  const [open, setOpen] = useState(false);
+  // The full list is open by default so every claim can be traced to its passage.
+  const [open, setOpen] = useState(true);
+  const [shown, setShown] = useState<string | null>(null);
   if (sources.length === 0) return null;
+  const mine = sources.filter((s) => s.origin === "case").length;
+  const kb = sources.length - mine;
+  const synthetic = sources.some(isSynthetic);
   return (
     <div className="mt-3 border-t border-white/[0.06] pt-2.5">
-      <button type="button" onClick={() => setOpen((o) => !o)} className="text-[11px] text-fog-400 hover:text-fog-100" aria-expanded={open}>
-        {open ? "Hide" : "Show"} {sources.length} source{sources.length === 1 ? "" : "s"}
+      <p className="text-[11px] text-fog-500">
+        Generated from {sources.length} retrieved passage{sources.length === 1 ? "" : "s"}
+        {mine > 0 && kb > 0 ? ` (${kb} knowledge base, ${mine} from your uploads)` : mine > 0 ? " from your uploads" : " in the knowledge base"}.
+        {synthetic && <span className="text-amber-hv"> Includes synthetic test data, not manufacturer documentation.</span>}
+      </p>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="mt-1 text-[11px] text-fog-400 hover:text-fog-100" aria-expanded={open}>
+        {open ? "Hide" : "Show"} sources
       </button>
       {open && (
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-2 space-y-2">
           {sources.map((s) => (
             <li key={s.chunkId} id={`${anchorPrefix}-${s.id}`} className="scroll-mt-32 text-[12px] leading-snug">
               <span className="mr-1.5 rounded bg-volt-400/10 px-1.5 py-px font-mono text-[10px] text-volt-300">{s.id}</span>
               <span className="text-fog-100">{s.sourceTitle}</span>
               <span className="text-fog-500">
                 {" · "}
-                {[s.origin === "case" ? "your upload" : (DOC_TYPE_LABEL[s.docType] ?? s.docType), s.page != null && `p. ${s.page}`]
+                {[s.origin === "case" ? "your upload" : (DOC_TYPE_LABEL[s.docType] ?? s.docType), s.section, s.page != null && `p. ${s.page}`, s.score != null && `match ${Math.round(s.score * 100)}%`]
                   .filter(Boolean)
                   .join(" · ")}
               </span>
+              <button type="button" onClick={() => setShown(shown === s.id ? null : s.id)} className="ml-2 text-volt-400 hover:text-volt-300">
+                {shown === s.id ? "hide passage" : "show passage"}
+              </button>
+              {shown === s.id && <p className="mt-1.5 border-l border-white/10 pl-2.5 whitespace-pre-wrap text-fog-400">{s.excerpt}</p>}
             </li>
           ))}
         </ul>
@@ -35,7 +51,20 @@ function SourcesList({ sources, anchorPrefix }: { sources: Source[]; anchorPrefi
   );
 }
 
-function Bubble({ m, index, onGeneral }: { m: Pick<ChatMessage, "role" | "content" | "sources" | "mode">; index: number | string; onGeneral?: () => void }) {
+function Bubble({
+  m,
+  index,
+  onGeneral,
+  onLocate,
+  parts,
+}: {
+  m: Pick<ChatMessage, "role" | "content" | "sources" | "mode">;
+  index: number | string;
+  onGeneral?: () => void;
+  onLocate?: () => void;
+  parts?: RankedPart[];
+}) {
+  const flagged = rankComponents(m.sources);
   const prefix = `msg${index}`;
   if (m.role === "user")
     return (
@@ -55,6 +84,31 @@ function Bubble({ m, index, onGeneral }: { m: Pick<ChatMessage, "role" | "conten
       <div className="min-w-0 flex-1 text-[14px] leading-relaxed text-fog-300">
         <RichText text={m.content} sources={m.sources} anchorPrefix={prefix} />
         <SourcesList sources={m.sources ?? []} anchorPrefix={prefix} />
+        {onLocate && (parts?.length || flagged.length) ? (
+          <div className="mt-3">
+            {parts && parts.length > 0 && (
+              <ol className="mb-2 space-y-1 text-[12px]">
+                {parts.map((p) => (
+                  <li key={p.id} className="flex items-center gap-2">
+                    <span className="grid size-4 place-items-center rounded-full bg-volt-400/15 font-mono text-[10px] text-volt-300">{p.rank}</span>
+                    <span className="text-fog-100">{p.name}</span>
+                    <span className="h-1 w-16 overflow-hidden rounded-full bg-white/10">
+                      <span className="block h-full bg-volt-400" style={{ width: `${Math.round(p.score * 100)}%` }} />
+                    </span>
+                    <span className="font-mono text-[10.5px] text-fog-500">{Math.round(p.score * 100)}%</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <button
+              type="button"
+              onClick={onLocate}
+              className="mr-2 rounded-full border border-volt-400/50 px-4 py-1.5 text-xs text-fog-100 transition-colors hover:bg-volt-400/10"
+            >
+              Locate on vehicle: {parts?.length ? parts.map((p) => p.name).join(", ") : flagged.map((id) => COMPONENT_BY_ID[id]?.short ?? id).join(", ")}
+            </button>
+          </div>
+        ) : null}
         {m.mode === "no_sources" && onGeneral && (
           <button type="button" onClick={onGeneral} className="mt-3 rounded-full border border-volt-400/50 px-4 py-1.5 text-xs text-fog-100 transition-colors hover:bg-volt-400/10">
             Give a general answer (no citations)
@@ -79,6 +133,9 @@ export function ChatPanel({
   notReadyReason,
   focus,
   clearFocus,
+  onLocate,
+  rankedParts,
+  rankedFor,
 }: {
   state: CaseState;
   language: string;
@@ -86,6 +143,9 @@ export function ChatPanel({
   notReadyReason: string;
   focus: ComponentId | null;
   clearFocus: () => void;
+  onLocate: () => void;
+  rankedParts?: RankedPart[];
+  rankedFor?: string;
 }) {
   const [draft, setDraft] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
@@ -167,6 +227,8 @@ export function ChatPanel({
             key={m.id}
             m={m}
             index={i}
+            onLocate={onLocate}
+            parts={m.id === rankedFor ? rankedParts : undefined}
             onGeneral={
               i === messages.length - 1 && !busy && messages[i - 1]?.role === "user"
                 ? () => void state.send(messages[i - 1].content, language, true)

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import express, { type NextFunction, type Request, type Response } from "express";
 import multer from "multer";
 import cors from "cors";
@@ -10,8 +11,9 @@ import { embeddingsConfigured } from "./embeddings.js";
 import { CaseReportRequest, ChatRequest, DiagnoseRequest, VehicleSchema } from "./schemas.js";
 import { diagnose } from "./diagnose.js";
 import { sourcesForComponent } from "./retrieval.js";
-import { ANY_VEHICLE, isComponentId } from "./catalog.js";
+import { ANY_VEHICLE, DTC_PATTERN, isComponentId } from "./catalog.js";
 import { batteryFromCase } from "./battery.js";
+import { ensureParts, rankParts } from "./parts.js";
 import { analyseVisual, LlmError, LlmUnavailableError } from "./llm.js";
 import { UnsupportedFileError } from "./documents.js";
 import {
@@ -201,7 +203,7 @@ app.post("/api/cases/:id/chat", async (req, res, next) => {
   const parsed = ChatRequest.safeParse(req.body);
   if (!parsed.success) return void validationError(res, parsed.error.issues);
   try {
-    await chat(req.params.id, parsed.data.message, parsed.data.language, res, parsed.data.general);
+    await chat(req.params.id, parsed.data.message, parsed.data.language, res);
   } catch (err) {
     next(err);
   }
@@ -218,13 +220,98 @@ app.delete("/api/cases/:id/messages", async (req, res, next) => {
   }
 });
 
+/** Parts of the vehicle ranked by the evidence behind the latest answer. */
+app.get("/api/cases/:id/parts", async (req, res, next) => {
+  try {
+    const c = await loadCase(String(req.params.id));
+    const parts = await ensureParts();
+    const last = [...c.messages].reverse().find((m) => m.role === "assistant" && m.sources?.length);
+    const userText = c.messages.filter((m) => m.role === "user").slice(-3).map((m) => m.content).join("\n");
+    const codes = new Set<string>();
+    for (const d of c.documents.filter((x) => x.status === "ready")) {
+      d.detectedDtcs.forEach((x) => codes.add(x));
+      d.extraction?.dtcs.forEach((x) => codes.add(x.code.toUpperCase()));
+    }
+    (userText.toUpperCase().match(DTC_PATTERN) ?? []).forEach((x) => codes.add(x));
+    const caseText = c.documents
+      .filter((d) => d.status === "ready")
+      .map((d) => [d.extraction?.summary ?? "", ...(d.extraction?.measurements ?? []).map((m) => `${m.name} ${m.value}${m.unit ? ` ${m.unit}` : ""}`)].join("\n"))
+      .join("\n")
+      .slice(0, 8000);
+    res.json({
+      forMessageId: last?.id ?? null,
+      catalogue: parts.length,
+      parts: rankParts({
+        parts,
+        sources: last?.sources ?? [],
+        userText,
+        caseText,
+        answerText: last?.content.replace(/\[S\d+\]/g, ""),
+        caseDtcs: [...codes],
+        limit: 8,
+      }),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const VISUAL_TTL_MS = 10 * 60_000;
+const VISUAL_MIN_GAP_MS = 3_000;
+const visualCache = new Map<string, { at: number; result: ReturnType<typeof analyseVisual> }>();
+const visualLastCall = new Map<string, number>();
+
 app.post("/api/cases/:id/visual", imageUpload.single("image"), async (req, res, next) => {
   try {
     const c = await loadCase(String(req.params.id));
     const f = req.file;
     if (!f) throw new CaseInputError("Choose an image or a video frame.");
     if (!IMAGE_TYPES.has(f.mimetype)) throw new CaseInputError("Use a JPEG, PNG or WebP image.");
-    res.json(await analyseVisual({ image: { mimeType: f.mimetype, data: f.buffer }, caseDoc: c, language: String(req.body?.language ?? "auto") }));
+    const suspected = String(req.body?.components ?? "")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(isComponentId);
+    // Ranked parts come from the client as { id, rank }; names and descriptions are read back from the catalogue.
+    const catalogue = new Map((await ensureParts()).map((p) => [p._id, p]));
+    let asked: { id: string; rank: number }[] = [];
+    try {
+      const raw = JSON.parse(String(req.body?.parts ?? "[]"));
+      if (Array.isArray(raw)) asked = raw.filter((x) => x && catalogue.has(String(x.id)) && Number.isInteger(x.rank)).slice(0, 5).map((x) => ({ id: String(x.id), rank: Number(x.rank) }));
+    } catch {
+      /* ignore malformed parts */
+    }
+    const ranked: { id: string; rank: number; name: string; look: string }[] = asked.map((a) => ({ ...a, name: catalogue.get(a.id)!.name, look: catalogue.get(a.id)!.look }));
+    // A part sealed inside another cannot be seen in a view of the closed vehicle, so its container is located too.
+    const insideOf: Record<string, string> = {};
+    for (const a of asked) {
+      const parent = catalogue.get(a.id)!.insideOf;
+      if (!parent) continue;
+      insideOf[a.id] = parent;
+      const existing = ranked.find((r) => r.id === parent);
+      if (existing) existing.rank = Math.min(existing.rank, a.rank);
+      else ranked.push({ id: parent, rank: a.rank, name: `${catalogue.get(parent)!.name} (contains the ranked parts)`, look: catalogue.get(parent)!.look });
+    }
+    const language = String(req.body?.language ?? "auto");
+    // Identical image + context (e.g. the same camera view) reuses the earlier answer instead of another model call.
+    const key = createHash("sha256")
+      .update(f.buffer)
+      .update(JSON.stringify([c._id, c.messages.length, language, suspected, ranked.map((r) => [r.id, r.rank]), insideOf]))
+      .digest("hex");
+    const hit = visualCache.get(key);
+    if (hit && hit.at > Date.now() - VISUAL_TTL_MS) return void res.json(await hit.result);
+    const last = visualLastCall.get(c._id) ?? 0;
+    if (Date.now() - last < VISUAL_MIN_GAP_MS)
+      return void res.status(429).json({ error: "too_fast", message: "Please wait a moment between visual analyses." });
+    visualLastCall.set(c._id, Date.now());
+    const result = analyseVisual({ image: { mimeType: f.mimetype, data: f.buffer }, caseDoc: c, language, suspected, ranked, insideOf });
+    visualCache.set(key, { at: Date.now(), result });
+    if (visualCache.size > 50) visualCache.delete(visualCache.keys().next().value!);
+    try {
+      res.json(await result);
+    } catch (e) {
+      visualCache.delete(key);
+      throw e;
+    }
   } catch (err) {
     next(err);
   }

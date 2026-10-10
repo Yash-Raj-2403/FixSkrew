@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2021-05-12",
+    "odometer_km": 18000,
+    "part": "12 V battery",
+    "action": "original, installed at build"
+  },
+  {
+    "date": "2024-08-20",
+    "odometer_km": 61000,
+    "part": "12 V battery",
+    "action": "tested 12.1 V, marginal, customer declined replacement"
+  },
+  {
+    "date": "2025-09-15",
+    "odometer_km": 69800,
+    "part": "HV junction box",
+    "action": "not replaced, contactors and resistor measured in range"
+  }
+]

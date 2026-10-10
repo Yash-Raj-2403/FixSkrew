@@ -3,6 +3,7 @@ import { ApiError } from "./api";
 import type { BatteryDataset } from "./battery";
 import { fetchImportedDataset, storedCaseId } from "./batteryApi";
 import { demoDataset } from "../data/demoBattery";
+import { useLiveVehicle, type LiveKind } from "./useLiveVehicle";
 
 export type BatteryState =
   | { status: "loading" }
@@ -16,7 +17,9 @@ export type BatteryState =
  * when the user asks for it, never as a fallback for missing or failed real data.
  */
 export function useBattery() {
-  const [mode, setMode] = useState<"imported" | "demo">("imported");
+  const [mode, setMode] = useState<"imported" | "demo" | "live">("imported");
+  const live = useLiveVehicle();
+  const previous = useRef<"imported" | "demo">("imported");
   const [state, setState] = useState<BatteryState>({ status: "loading" });
   const [refreshing, setRefreshing] = useState(false);
   const ctrl = useRef<AbortController | null>(null);
@@ -42,7 +45,16 @@ export function useBattery() {
     }
   }, []);
 
+  // Live vehicle data replaces the case data while an adapter is connected.
   useEffect(() => {
+    if (mode !== "live") return;
+    if (live.dataset) setState({ status: "ready", dataset: live.dataset });
+    else if (live.status === "error") setState({ status: "error", message: live.message });
+    else setState({ status: "loading" });
+  }, [mode, live.dataset, live.status, live.message]);
+
+  useEffect(() => {
+    if (mode === "live") return;
     if (mode === "imported") void load();
     else {
       ctrl.current?.abort();
@@ -56,7 +68,22 @@ export function useBattery() {
     mode,
     refreshing,
     showDemo: () => setMode("demo"),
-    showImported: () => setMode("imported"),
+    showImported: () => {
+      void live.disconnect();
+      setMode("imported");
+    },
+    live: { status: live.status, message: live.message },
+    /** Connect an OBD-II adapter and show the vehicle's own readings. */
+    connectVehicle: async (kind: LiveKind) => {
+      if (mode !== "live") previous.current = mode;
+      setMode("live");
+      const picked = await live.connect(kind);
+      if (!picked) setMode(previous.current);
+    },
+    disconnectVehicle: async () => {
+      await live.disconnect();
+      setMode(previous.current);
+    },
     /** Re-requests the case's readings from the server. Only available for imported data. */
     refresh: mode === "imported" ? () => void load(true) : undefined,
     retry: () => void load(),

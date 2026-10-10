@@ -16,7 +16,7 @@ function wrap(err: unknown): never {
   throw err;
 }
 
-const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+const RETRYABLE = new Set([500, 502, 503, 504]);
 
 /** Retry transient Gemini failures (overload, rate limits) with jittered backoff. */
 async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {

@@ -1,0 +1,22 @@
+SYNTHETIC SAMPLE DATA for testing FixSkrew. Not from a real vehicle. VIN, dates and readings are fictional.
+
+SCAN TOOL REPORT  (BMS session)
+Vehicle : Tesla Model 3 Standard Range Plus, 2020, 69,800 km
+VIN     : 5YJ3E1EB0LF000103 (fictional)
+Date    : 2025-09-15 08:30
+Ambient : 9 C
+
+TROUBLE CODES
+P0ADD  STORED  Positive contactor stuck open
+P0AE2  STORED  Pre-charge contactor circuit fault
+
+FREEZE FRAME (P0AE2)
+ 12 V supply at wake-up . 10.5 V
+ Pre-charge time ........ 2.7 s
+ State of charge ........ 63 %
+ Pack temperature ....... 9.0 C
+
+EVENT LOG
+2025-09-04  car left unused at the airport for 10 days
+2025-09-14 18:10  HV warning on start, car did not drive, drove after 3rd attempt
+2025-09-15 08:30  both codes stored, no active codes

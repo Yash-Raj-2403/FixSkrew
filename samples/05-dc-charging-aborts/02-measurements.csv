@@ -1,0 +1,13 @@
+measurement,value,unit,condition
+State of charge,41,%,
+State of health,96,%,BMS estimate
+Pack voltage,364.0,V,at rest
+Highest cell group voltage,3.793,V,
+Lowest cell group voltage,3.783,V,
+Cell voltage spread at rest,0.010,V,
+Pack temperature average,15.0,C,
+Pre-charge time to 95 percent bus voltage,0.9,s,
+DC fuse resistance,open circuit,,measured with the pack de-energised
+Charge port temperature,18.0,C,
+Insulation resistance,1880,ohm/V,
+Idle pack current,0.2,A,

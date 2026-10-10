@@ -18,6 +18,7 @@ import {
 } from "../../lib/battery";
 import { navigate, showComponentInfo } from "../../lib/router";
 import { useBattery } from "../../lib/useBattery";
+import { bluetoothSupported, serialSupported } from "../../lib/obd";
 import { TrendChart } from "./TrendChart";
 
 const VOLT = "#3fd8f2";
@@ -99,6 +100,26 @@ function StateCard({ title, children, actions }: { title: string; children: Reac
 const primary = "rounded-full bg-volt-400 px-5 py-2 text-sm font-medium text-ink-900 transition-colors hover:bg-volt-300";
 const ghost = "rounded-full border border-white/15 px-5 py-2 text-sm text-fog-100 transition-colors hover:border-volt-400/50";
 
+function ConnectVehicle({ onConnect, busy }: { onConnect: (k: "serial" | "bluetooth") => void; busy: boolean }) {
+  const serial = serialSupported();
+  const ble = bluetoothSupported();
+  if (!serial && !ble) return <span className="text-[12px] text-fog-500" title="Web Serial or Web Bluetooth">Connecting a vehicle needs Chrome or Edge.</span>;
+  return (
+    <span className="inline-flex items-center gap-2">
+      {serial && (
+        <button type="button" disabled={busy} onClick={() => onConnect("serial")} className={`${primary} py-1.5! text-xs! disabled:opacity-60`}>
+          Connect vehicle (USB)
+        </button>
+      )}
+      {ble && (
+        <button type="button" disabled={busy} onClick={() => onConnect("bluetooth")} className={`${ghost} py-1.5! text-xs! disabled:opacity-60`}>
+          Bluetooth
+        </button>
+      )}
+    </span>
+  );
+}
+
 /* -------------------------------- dashboard -------------------------------- */
 
 function Dashboard({ d }: { d: BatteryDataset }) {
@@ -115,7 +136,9 @@ function Dashboard({ d }: { d: BatteryDataset }) {
   const sp = spreads(visible);
   const lastSpread = sp.at(-1);
   const spreadMv = lastSpread?.unit.toLowerCase() === "v";
-  const others = visible.filter((r) => r.key === "other");
+  const otherRows = visible.filter((r) => r.key === "other");
+  const others = [...new Map(otherRows.map((r) => [r.label, r])).values()].map((r) => latest(otherRows.filter((x) => x.label === r.label) as Reading[], "other")!);
+  const otherCharts = d.source === "live" ? [...new Set(otherRows.map((r) => r.label))].map((label) => ({ label, unit: otherRows.find((r) => r.label === label)!.unit, points: series(otherRows.filter((r) => r.label === label), "other") })).filter((o) => o.points.length >= 2) : [];
 
   const charted = (["soc", "pack_voltage", "battery_temp", "soh", "current"] as MeasurementKey[]).filter((k) => series(visible, k).length >= 2);
   const cellSeries = [
@@ -218,17 +241,20 @@ function Dashboard({ d }: { d: BatteryDataset }) {
       )}
 
       {/* history */}
-      {(charted.length > 0 || cellSeries.length > 0) && (
+      {(charted.length > 0 || cellSeries.length > 0 || otherCharts.length > 0) && (
         <section aria-label="History" className="grid gap-4 lg:grid-cols-2">
           {charted.map((k) => {
             const unit = visible.find((r) => r.key === k)?.unit ?? "";
             return <TrendChart key={k} title={MEASUREMENTS[k].label} unit={unit} series={[{ name: MEASUREMENTS[k].short, color: VOLT, points: series(visible, k) }]} />;
           })}
           {cellSeries.length > 0 && <TrendChart title="Cell voltage, highest and lowest" unit={visible.find((r) => r.key === "cell_voltage_max")?.unit ?? ""} decimals={3} series={cellSeries} />}
+          {otherCharts.map((o) => (
+            <TrendChart key={o.label} title={o.label} unit={o.unit} series={[{ name: o.label, color: VOLT, points: o.points }]} />
+          ))}
           {spreadPoints.length >= 2 && <TrendChart title="Cell voltage spread" unit={spreadMv ? "mV" : (lastSpread?.unit ?? "")} decimals={1} series={[{ name: "Spread", color: AMBER, points: spreadPoints }]} />}
         </section>
       )}
-      {timed && charted.length === 0 && cellSeries.length === 0 && <Notice tone="info">No measurement has two or more readings in this selection, so there is nothing to chart. Widen the time range or clear filters.</Notice>}
+      {timed && charted.length === 0 && cellSeries.length === 0 && otherCharts.length === 0 && <Notice tone="info">No measurement has two or more readings in this selection, so there is nothing to chart. Widen the time range or clear filters.</Notice>}
 
       {others.length > 0 && (
         <section aria-label="Other readings" className="glass rounded-2xl p-5">
@@ -313,6 +339,14 @@ export function BatteryDashboard({ onUpload }: { onUpload?: () => void } = {}) {
                 {b.refreshing ? "Refreshing…" : "Refresh"}
               </button>
             )}
+            {b.mode === "live" ? (
+              <button type="button" onClick={() => void b.disconnectVehicle()} className={`${ghost} py-1.5! text-xs!`}>
+                Disconnect vehicle
+              </button>
+            ) : (
+              <ConnectVehicle onConnect={b.connectVehicle} busy={b.live.status === "connecting"} />
+            )}
+            {b.live.status === "connecting" && <span className="text-[12px] text-fog-400">{b.live.message}</span>}
             {b.mode === "demo" && (
               <button type="button" onClick={b.showImported} className={`${ghost} py-1.5! text-xs!`}>
                 Back to case data
@@ -364,7 +398,7 @@ export function BatteryDashboard({ onUpload }: { onUpload?: () => void } = {}) {
               {b.state.reason === "no_case"
                 ? "There is no diagnosis case yet. Upload a scan report or log in the diagnosis workspace and its battery readings and trouble codes will appear here."
                 : "The documents in this case contain no battery readings or trouble codes that could be read."}{" "}
-              The preview uses simulated values, clearly labelled, and is not vehicle data.
+              Or connect an OBD-II adapter (button above) to read the vehicle directly. The preview uses simulated values, clearly labelled, and is not vehicle data.
             </StateCard>
           )}
           {dataset && <Dashboard key={dataset.source} d={dataset} />}

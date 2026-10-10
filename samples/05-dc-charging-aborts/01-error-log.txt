@@ -1,0 +1,16 @@
+SYNTHETIC SAMPLE DATA for testing FixSkrew. Not from a real vehicle. VIN, dates and readings are fictional.
+
+SCAN TOOL REPORT  (charging session log)
+Vehicle : Tesla Model 3 Performance, 2022, 37,200 km
+VIN     : 5YJ3E1EC1NF000105 (fictional)
+Date    : 2025-09-29 11:20
+Ambient : 15 C
+
+TROUBLE CODES
+(none stored, none active)
+
+CHARGING SESSIONS
+2025-09-26 DC charger A  start 11:02  abort after 8 s   reason: charger side reports vehicle contactor not closed
+2025-09-27 DC charger B  start 17:40  abort after 9 s   same
+2025-09-28 DC charger C  start 09:15  abort after 7 s   same
+2025-09-28 AC 11 kW home start 20:05  completed 100 %   normal
