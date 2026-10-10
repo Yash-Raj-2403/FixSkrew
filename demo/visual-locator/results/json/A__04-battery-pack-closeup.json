@@ -1,0 +1,31 @@
+{
+  "scenario": "A",
+  "image": "04-battery-pack-closeup.jpg",
+  "view": "Top-down view of the high-voltage traction battery pack integrated into the vehicle chassis.",
+  "vehicle_seen": "Tesla Model 3",
+  "markers": [
+    {
+      "label": "Battery module",
+      "priority": "inspect_first",
+      "reason": "Inspect module 3 for high internal resistance and cell voltage imbalance.",
+      "box": {
+        "ymin": 195,
+        "xmin": 218,
+        "ymax": 645,
+        "xmax": 822
+      }
+    },
+    {
+      "label": "HV harness and connector",
+      "priority": "check_second",
+      "reason": "Check the module 3 sense connector and high voltage wiring for faults.",
+      "box": {
+        "ymin": 234,
+        "xmin": 113,
+        "ymax": 512,
+        "xmax": 788
+      }
+    }
+  ],
+  "note": ""
+}

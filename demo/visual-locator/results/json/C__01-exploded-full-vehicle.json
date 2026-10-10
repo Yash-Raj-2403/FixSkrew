@@ -1,0 +1,53 @@
+{
+  "scenario": "C",
+  "image": "01-exploded-full-vehicle.jpg",
+  "view": "An exploded view render of an electric vehicle showing the chassis, high-voltage battery pack, suspension assemblies, drive units, and body panels.",
+  "vehicle_seen": "Tesla Model 3",
+  "markers": [
+    {
+      "label": "High-voltage battery pack",
+      "priority": "inspect_first",
+      "reason": "The diagnostic report indicates module 4 temperature is 58.0 C with a voltage imbalance, pointing to battery thermal and cell issues.",
+      "box": {
+        "ymin": 579,
+        "xmin": 378,
+        "ymax": 698,
+        "xmax": 601
+      }
+    },
+    {
+      "label": "Rear drive unit",
+      "priority": "check_second",
+      "reason": "The diagnostic report identifies powertrain cooling and limited power complaints which involve the drive unit assemblies.",
+      "box": {
+        "ymin": 558,
+        "xmin": 795,
+        "ymax": 640,
+        "xmax": 842
+      }
+    },
+    {
+      "label": "Rear suspension assembly",
+      "priority": "context",
+      "reason": "Rear suspension assembly displayed in the exploded view.",
+      "box": {
+        "ymin": 515,
+        "xmin": 694,
+        "ymax": 709,
+        "xmax": 797
+      }
+    },
+    {
+      "label": "Front suspension assembly",
+      "priority": "context",
+      "reason": "Front suspension assembly displayed in the exploded view.",
+      "box": {
+        "ymin": 516,
+        "xmin": 204,
+        "ymax": 718,
+        "xmax": 315
+      }
+    }
+  ],
+  "note": ""
+}

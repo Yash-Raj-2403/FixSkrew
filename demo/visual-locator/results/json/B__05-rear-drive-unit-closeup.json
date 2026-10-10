@@ -1,0 +1,42 @@
+{
+  "scenario": "B",
+  "image": "05-rear-drive-unit-closeup.jpg",
+  "view": "An overhead angled studio render showing an electric vehicle drive unit, suspension assembly, and a detached wheel on a dark reflective surface.",
+  "vehicle_seen": "",
+  "markers": [
+    {
+      "label": "Drive unit",
+      "priority": "inspect_first",
+      "reason": "Contains high-voltage and interlock connectors associated with the P0A0D code.",
+      "box": {
+        "ymin": 133,
+        "xmin": 629,
+        "ymax": 393,
+        "xmax": 870
+      }
+    },
+    {
+      "label": "Suspension assembly",
+      "priority": "context",
+      "reason": "Front suspension assembly showing the layout where vibration over rough roads occurred.",
+      "box": {
+        "ymin": 33,
+        "xmin": 91,
+        "ymax": 627,
+        "xmax": 566
+      }
+    },
+    {
+      "label": "Wheel and tire",
+      "priority": "context",
+      "reason": "Detached wheel assembly shown in the foreground.",
+      "box": {
+        "ymin": 620,
+        "xmin": 313,
+        "ymax": 981,
+        "xmax": 663
+      }
+    }
+  ],
+  "note": ""
+}

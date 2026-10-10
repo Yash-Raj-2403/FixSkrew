@@ -251,7 +251,9 @@ export async function chat(id: string, message: string, language: string, res: R
     // Citations must point at excerpts that were retrieved. Strip any that do not, and say so
     // when a sourced answer ends up with no valid citation at all.
     const valid = new Set(evidence.map((e) => e.id));
-    let reply = useGeneral ? GENERAL_PREFIX + rawReply : rawReply.replace(/\s?\[(S\d+)\]/g, (m, sid) => (valid.has(sid) ? m : ""));
+    // Models sometimes group citations ("[S2, S3]"); split them so each one is checked and linked.
+    const split = rawReply.replace(/\[(S\d+(?:\s*,\s*S\d+)+)\]/g, (_m, ids: string) => ids.split(/\s*,\s*/).map((id) => `[${id}]`).join(" "));
+    let reply = useGeneral ? GENERAL_PREFIX + rawReply : split.replace(/\s?\[(S\d+)\]/g, (m, sid) => (valid.has(sid) ? m : ""));
     if (!useGeneral && ![...reply.matchAll(/\[(S\d+)\]/g)].length) {
       const note = "\n\nNote: this reply does not cite a source, so treat it as unverified.";
       reply += note;

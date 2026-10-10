@@ -1,0 +1,31 @@
+{
+  "scenario": "B",
+  "image": "03-powertrain-and-pack.jpg",
+  "view": "Exploded view of an electric vehicle showing the chassis, traction battery, suspension assemblies, and drive unit.",
+  "vehicle_seen": "",
+  "markers": [
+    {
+      "label": "Traction battery",
+      "priority": "inspect_first",
+      "reason": "Houses the HV junction box and connectors associated with the P0A0D interlock circuit open code.",
+      "box": {
+        "ymin": 224,
+        "xmin": 308,
+        "ymax": 526,
+        "xmax": 618
+      }
+    },
+    {
+      "label": "Drive unit",
+      "priority": "check_second",
+      "reason": "Contains high-voltage and HVIL connectors that should be checked for intermittent vibration-related opens.",
+      "box": {
+        "ymin": 133,
+        "xmin": 892,
+        "ymax": 331,
+        "xmax": 978
+      }
+    }
+  ],
+  "note": ""
+}

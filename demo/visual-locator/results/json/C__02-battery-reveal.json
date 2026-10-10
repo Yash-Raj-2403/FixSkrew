@@ -1,0 +1,42 @@
+{
+  "scenario": "C",
+  "image": "02-battery-reveal.jpg",
+  "view": "An exploded view of an electric vehicle showing the chassis, high-voltage battery pack, drive units, suspension, and body panels.",
+  "vehicle_seen": "Tesla Model Y",
+  "markers": [
+    {
+      "label": "High-voltage battery pack",
+      "priority": "inspect_first",
+      "reason": "The report indicates a high temperature in Module 4 and an active cell voltage imbalance code P0B3C.",
+      "box": {
+        "ymin": 599,
+        "xmin": 358,
+        "ymax": 745,
+        "xmax": 630
+      }
+    },
+    {
+      "label": "Drive unit",
+      "priority": "context",
+      "reason": "Rear drive unit assembly displayed as part of the vehicle structure.",
+      "box": {
+        "ymin": 566,
+        "xmin": 809,
+        "ymax": 673,
+        "xmax": 873
+      }
+    },
+    {
+      "label": "Front suspension",
+      "priority": "context",
+      "reason": "Front suspension assembly displayed in the exploded view.",
+      "box": {
+        "ymin": 560,
+        "xmin": 182,
+        "ymax": 724,
+        "xmax": 305
+      }
+    }
+  ],
+  "note": "The battery coolant pump specifically mentioned in the case report is not clearly visible in this general exploded vehicle view."
+}

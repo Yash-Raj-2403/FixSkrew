@@ -1,0 +1,29 @@
+SCAN REPORT (SYNTHETIC TEST DATA - not from a real vehicle)
+Source: FixSkrew test log SYN-M3-LOG-001, Log E
+
+Vehicle: Tesla Model 3 Long Range, 2019, 118,000 km
+Complaint: "Lost drive power twice while driving over rough road. Restarted and it was fine."
+
+TROUBLE CODES
+P0A0D  Stored (4 occurrences)   HV system interlock circuit open
+
+FREEZE FRAME (last occurrence)
+Vehicle speed .............................. 52 km/h
+Pack current ............................... 85 A
+Pack voltage ............................... 351.0 V
+Pack temperature ........................... 24.0 C
+Cell voltage spread ........................ 0.019 V (healthy)
+Interlock loop resistance when closed ...... normal
+
+FINDINGS
+- The battery pack is healthy: normal voltage and cell spread.
+- The fault only happens over rough road: an intermittent open interlock under vibration,
+  typically a poorly seated high-voltage connector.
+- 2019 vehicle is inside connector-latch campaign SYN-RC-24-001; the campaign sticker
+  is missing from the HV junction box cover.
+
+RECOMMENDED
+1. Inspect the HV junction box connector pins and latches (campaign SYN-RC-24-001).
+2. Inspect the high-voltage connectors and interlock (HVIL) connectors at the front and
+   rear drive unit inverters, and the HV cables between the pack and the drive units.
+3. Clear the code and road-test over rough road. No battery replacement is indicated.

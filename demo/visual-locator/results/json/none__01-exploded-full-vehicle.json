@@ -1,0 +1,53 @@
+{
+  "scenario": "none",
+  "image": "01-exploded-full-vehicle.jpg",
+  "view": "An exploded-view render of an electric vehicle showing the body structure, battery pack, suspension, drive unit, and interior components.",
+  "vehicle_seen": "Tesla Model Y",
+  "markers": [
+    {
+      "label": "High voltage battery pack",
+      "priority": "context",
+      "reason": "",
+      "box": {
+        "ymin": 579,
+        "xmin": 378,
+        "ymax": 693,
+        "xmax": 601
+      }
+    },
+    {
+      "label": "Drive unit",
+      "priority": "context",
+      "reason": "",
+      "box": {
+        "ymin": 554,
+        "xmin": 791,
+        "ymax": 641,
+        "xmax": 844
+      }
+    },
+    {
+      "label": "Front suspension",
+      "priority": "context",
+      "reason": "",
+      "box": {
+        "ymin": 515,
+        "xmin": 204,
+        "ymax": 693,
+        "xmax": 317
+      }
+    },
+    {
+      "label": "Rear suspension",
+      "priority": "context",
+      "reason": "",
+      "box": {
+        "ymin": 511,
+        "xmin": 695,
+        "ymax": 716,
+        "xmax": 787
+      }
+    }
+  ],
+  "note": "No case evidence yet, so parts are labelled but not prioritised. Upload a document or describe the fault, then analyse again."
+}

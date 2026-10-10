@@ -1,0 +1,42 @@
+{
+  "scenario": "A",
+  "image": "01-exploded-full-vehicle.jpg",
+  "view": "Exploded view of an electric vehicle showing body, suspension, drive units, interior and high voltage battery pack.",
+  "vehicle_seen": "Tesla Model 3",
+  "markers": [
+    {
+      "label": "High voltage battery pack",
+      "priority": "inspect_first",
+      "reason": "Diagnostic scan report indicates battery deterioration and cell voltage imbalance inside module 3 of the traction battery pack.",
+      "box": {
+        "ymin": 578,
+        "xmin": 379,
+        "ymax": 698,
+        "xmax": 601
+      }
+    },
+    {
+      "label": "Front drive unit",
+      "priority": "context",
+      "reason": "Front electric motor and transmission assembly.",
+      "box": {
+        "ymin": 519,
+        "xmin": 213,
+        "ymax": 677,
+        "xmax": 315
+      }
+    },
+    {
+      "label": "Rear drive unit",
+      "priority": "context",
+      "reason": "Rear electric motor and inverter assembly.",
+      "box": {
+        "ymin": 521,
+        "xmin": 698,
+        "ymax": 676,
+        "xmax": 783
+      }
+    }
+  ],
+  "note": "Specific internal modules are not separately distinguishable in this overview render, but the main high voltage battery assembly is visible."
+}

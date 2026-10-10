@@ -1,0 +1,33 @@
+SCAN REPORT (SYNTHETIC TEST DATA - not from a real vehicle)
+Source: FixSkrew test log SYN-M3-LOG-001, Log I
+
+Vehicle: Tesla Model 3 Standard Range Plus, 2021, 49,000 km
+Complaint: "Car limited power, then a warning, now charging is slow."
+
+TROUBLE CODES
+P0A81  Active   Battery coolant pump / cooling fan control circuit
+P0A9C  Active   Battery temperature sensor circuit range/performance
+P0B3C  Stored   Cell voltage imbalance
+
+READINGS
+Module 1 temperature ....................... 31.0 C
+Module 2 temperature ....................... 30.5 C
+Module 3 temperature ....................... 30.8 C
+Module 4 temperature ....................... 58.0 C
+Coolant pump command ....................... 100 %
+Coolant pump actual speed .................. 0 %
+Cell voltage spread at rest ................ 0.071 V
+State of health ............................ 92 %
+
+FINDINGS
+- The coolant pump is commanded to 100 % but does not turn: pump or pump circuit fault (P0A81).
+  Loss of coolant flow explains the power limit and slow charging.
+- Module 4 reads 58 C while modules 1-3 agree at about 31 C: either a module 4 temperature
+  sensor fault (P0A9C) or a real hot spot at module 4. One reading cannot decide.
+- The cell spread may be a consequence of the temperature difference, not a weak cell.
+
+RECOMMENDED
+1. Prioritise the coolant pump: check the pump fuse, connector and 12 V supply.
+2. Check the battery coolant inlet/outlet lines to the pack for flow.
+3. Verify module 4 temperature with an independent contact thermometer.
+4. Re-measure the cell spread after the cooling fault is repaired.

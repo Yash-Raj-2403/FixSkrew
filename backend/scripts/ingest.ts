@@ -11,6 +11,7 @@
  * See knowledge/README.md for the manifest format.
  */
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -72,6 +73,9 @@ async function main() {
 
   const manifestPath = path.join(KNOWLEDGE_DIR, "manifest.json");
   const manifest = Manifest.parse(JSON.parse(await readFile(manifestPath, "utf8")));
+  // Optional, git-ignored manifest for licensed documents that must stay out of the repository.
+  const localPath = path.join(KNOWLEDGE_DIR, "manifest.local.json");
+  if (existsSync(localPath)) manifest.documents.push(...Manifest.parse(JSON.parse(await readFile(localPath, "utf8"))).documents);
   const docs = manifest.documents.filter((d) => !only || d.file === only);
   if (docs.length === 0) {
     console.log("No documents to ingest. Add entries to knowledge/manifest.json (see knowledge/README.md).");

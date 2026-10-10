@@ -1,0 +1,37 @@
+SCAN REPORT (SYNTHETIC TEST DATA - not from a real vehicle)
+Source: FixSkrew test log SYN-M3-LOG-001, Log B
+
+Vehicle: Tesla Model 3 Standard Range Plus, 2020, 96,400 km
+Complaint: "Range is down, and charging seems to stop early at the same point."
+
+TROUBLE CODES
+P0B3C  Active   Cell voltage imbalance above limit
+P0A7F  Stored   Battery pack deterioration
+
+PACK READINGS AT REST (3 h rest, SOC 71 %)
+State of health ............................ 83 %
+Pack voltage ............................... 375.2 V
+Highest cell group voltage ................. 3.911 V (group 62, module 3)
+Lowest cell group voltage .................. 3.771 V (group 63, module 3)
+Cell voltage spread ........................ 0.140 V (action limit 0.080 V)
+Pack temperature (average) ................. 21.0 C
+Module temperature spread .................. 2.0 C
+Insulation resistance ...................... 1,640 ohm/V (healthy)
+
+BALANCING CHARGE
+Spread after balancing to 100 % and 2 h rest: 0.126 V. Group 63 of module 3 still lowest.
+
+LOAD TEST (150 A discharge)
+Group 63 under load ........................ 3.402 V
+Neighbouring groups ........................ 3.590 V
+Extra drop of group 63 ..................... 0.188 V
+
+FINDINGS
+- The same group (63, module 3) is lowest at rest and under load: high internal resistance in that group.
+- Pack temperature and insulation are normal, so thermal and isolation faults are not the cause.
+- Module 3 sense connector has not been checked yet.
+
+RECOMMENDED
+1. Reseat and inspect the module 3 sense connector to exclude a false reading, then re-test.
+2. If group 63 is still weak, replace battery module 3.
+3. Verify with a balancing charge and a load test.

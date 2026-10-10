@@ -5,3 +5,7 @@ dist/
 !.env.example
 *.log
 .vite/
+
+# Licensed documents ingested locally only (never commit: third-party copyright)
+knowledge/manifest.local.json
+knowledge/**/official/
