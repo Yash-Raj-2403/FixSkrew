@@ -257,9 +257,10 @@ app.get("/api/cases/:id/parts", async (req, res, next) => {
 });
 
 const VISUAL_TTL_MS = 10 * 60_000;
-const VISUAL_MIN_GAP_MS = 3_000;
+const VISUAL_MIN_GAP_MS = 1_500;
 const visualCache = new Map<string, { at: number; result: ReturnType<typeof analyseVisual> }>();
 const visualLastCall = new Map<string, number>();
+const visualQueue = new Map<string, Promise<unknown>>();
 
 app.post("/api/cases/:id/visual", imageUpload.single("image"), async (req, res, next) => {
   try {
@@ -299,11 +300,18 @@ app.post("/api/cases/:id/visual", imageUpload.single("image"), async (req, res, 
       .digest("hex");
     const hit = visualCache.get(key);
     if (hit && hit.at > Date.now() - VISUAL_TTL_MS) return void res.json(await hit.result);
-    const last = visualLastCall.get(c._id) ?? 0;
-    if (Date.now() - last < VISUAL_MIN_GAP_MS)
-      return void res.status(429).json({ error: "too_fast", message: "Please wait a moment between visual analyses." });
-    visualLastCall.set(c._id, Date.now());
-    const result = analyseVisual({ image: { mimeType: f.mimetype, data: f.buffer }, caseDoc: c, language, suspected, ranked, insideOf });
+    // Calls for one case run one at a time with a short gap, so a cancelled request followed by a new one
+    // (rotating, chat-driven re-analysis) waits its turn instead of failing.
+    const previous = visualQueue.get(c._id) ?? Promise.resolve();
+    const result = previous
+      .catch(() => undefined)
+      .then(async () => {
+        const wait = VISUAL_MIN_GAP_MS - (Date.now() - (visualLastCall.get(c._id) ?? 0));
+        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+        visualLastCall.set(c._id, Date.now());
+        return analyseVisual({ image: { mimeType: f.mimetype, data: f.buffer }, caseDoc: c, language, suspected, ranked, insideOf });
+      });
+    visualQueue.set(c._id, result);
     visualCache.set(key, { at: Date.now(), result });
     if (visualCache.size > 50) visualCache.delete(visualCache.keys().next().value!);
     try {

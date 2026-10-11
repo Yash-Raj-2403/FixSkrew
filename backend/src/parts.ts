@@ -118,6 +118,7 @@ export function rankParts(opts: {
   const raw = opts.parts.map((p) => {
     const patterns = p.patterns.map(re);
     let total = 0;
+    let fromSources = 0;
     const reasons: { w: number; text: string }[] = [];
     const sourceIds: string[] = [];
 
@@ -128,15 +129,23 @@ export function rankParts(opts: {
       const strength = (dtcHit ? 0.7 : 0) + Math.min(kw, 2) * 0.35;
       if (strength <= 0) continue;
       const c = weight(s) * strength;
-      total += c;
+      fromSources += c;
       sourceIds.push(s.id);
       reasons.push({ w: c, text: `${s.id}: ${s.sourceTitle.replace(/^SYNTHETIC TEST:\s*/i, "")}${s.section ? ` · ${s.section}` : ""}${dtcHit ? ` (code ${dtcHit})` : ""}` });
     }
 
+    // Many passages about one part must not drown out a part the technician named.
+    total += Math.min(fromSources, 2.5);
     const userHits = patterns.filter((r) => r.test(opts.userText)).length;
     if (userHits) {
       total += Math.min(userHits, 2) * 1.0;
       reasons.push({ w: 2, text: "Named in your messages" });
+    }
+    // Naming the part itself ("drive unit", "coolant pump") outweighs incidental keyword hits on other parts.
+    const core = p.name.replace(/\(.*?\)/g, "").replace(/^(front|rear)\s+/i, "").trim().toLowerCase();
+    if (core.length > 4 && opts.userText.toLowerCase().includes(core)) {
+      total += 1.5;
+      reasons.push({ w: 2.5, text: "You named this part" });
     }
     const caseHits = opts.caseText ? patterns.filter((r) => r.test(opts.caseText!)).length : 0;
     if (caseHits) {

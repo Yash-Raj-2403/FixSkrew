@@ -6,11 +6,24 @@ import { LlmError, LlmUnavailableError, type LlmProvider } from "./types.js";
 let client: GoogleGenAI | null = null;
 const getClient = () => (client ??= new GoogleGenAI({ apiKey: config.gemini.apiKey }));
 
+/** Name the model and the limit that was hit, from Gemini's 429 body (e.g. " (gemini-3-flash, per-day free-tier limit, retry in 32s)"). */
+function quotaDetail(message: string): string {
+  const model = message.match(/"model":\s*"([^"]+)"/)?.[1] ?? message.match(/model:\s*([\w.-]+)/)?.[1];
+  const id = message.match(/"quotaId":\s*"([^"]+)"/)?.[1] ?? message.match(/quotaId[":\s]+([\w-]+)/)?.[1] ?? "";
+  const window = /PerDay/i.test(id) ? "per-day" : /PerMinute/i.test(id) ? "per-minute" : "";
+  const tier = /FreeTier/i.test(id) ? "free-tier" : "";
+  const retry = message.match(/retry in ([\d.]+)s/i)?.[1] ?? message.match(/"retryDelay":\s*"(\d+)s"/)?.[1];
+  const parts = [model, [window, tier, id && "limit"].filter(Boolean).join(" "), retry && `retry in ${Math.ceil(Number(retry))}s`].filter(Boolean);
+  return parts.length ? ` (${parts.join(", ")})` : "";
+}
+
 function wrap(err: unknown): never {
   if (err instanceof LlmError) throw err;
   if (err instanceof ApiError) {
     console.error("[gemini]", err.status, err.message.slice(0, 300));
-    if (err.status === 429) throw new LlmUnavailableError("The language model quota or rate limit was reached. Try again shortly.", true);
+    if (err.status === 429) throw new LlmUnavailableError(`The language model quota or rate limit was reached${quotaDetail(err.message)}. Try again shortly.`, true);
+    if (err.status === 401 || err.status === 403)
+      throw new LlmUnavailableError("The Gemini API key was rejected (access denied for this key or project). Replace GEMINI_API_KEY in backend/.env with a valid key and restart the backend.", false);
     throw new LlmUnavailableError("The language model request failed. Check the diagnostic service logs.", false);
   }
   throw err;
